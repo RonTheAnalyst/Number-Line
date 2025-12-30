@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Frog: Walk & Jump</title>
+    <title>Math Frog: Step-by-Step</title>
     <style>
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
@@ -13,13 +13,12 @@
             padding: 20px;
         }
 
-        h1 { color: #006064; margin-bottom: 5px;}
-        p { color: #00838f; margin-top: 0;}
+        h1 { color: #006064; margin-bottom: 5px; }
 
         /* Scroll Container */
         #scroll-container {
             width: 95%;
-            height: 350px;
+            height: 380px; /* Taller for speech bubble */
             overflow-x: auto;
             margin: 20px auto;
             border: 4px solid #00838f;
@@ -31,22 +30,95 @@
 
         canvas {
             display: block;
-            /* A subtle grid background to make it look like graph paper */
             background-image: 
                 linear-gradient(#eee 1px, transparent 1px),
                 linear-gradient(90deg, #eee 1px, transparent 1px);
             background-size: 20px 20px;
         }
 
-        /* Controls */
-        .controls {
-            background: #ffffff;
-            padding: 15px 30px;
-            border-radius: 50px;
-            display: inline-block;
-            box-shadow: 0 10px 20px rgba(0,96,100,0.15);
-            border: 2px solid #b2ebf2;
+        /* The Frog Character */
+        .character-container {
+            position: absolute;
+            bottom: 70px;
+            left: 25px; /* Initial offset */
+            transition: left 1.0s ease-in-out, bottom 1.0s ease-in-out; /* Slower animation */
+            z-index: 10;
+            width: 50px;
+            height: 50px;
+            pointer-events: none;
         }
+
+        .frog-emoji {
+            font-size: 40px;
+            display: block;
+            text-align: center;
+        }
+
+        /* Speech Bubble */
+        .speech-bubble {
+            background: #fff;
+            border: 2px solid #000;
+            border-radius: 10px;
+            padding: 5px 10px;
+            position: absolute;
+            bottom: 50px; /* Above the frog */
+            left: -60px; /* Center relative to frog */
+            width: 160px;
+            font-size: 14px;
+            color: #000;
+            text-align: center;
+            display: none; /* Hidden initially */
+        }
+        /* Tiny triangle for speech bubble */
+        .speech-bubble:after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            margin-left: -10px;
+            border-width: 10px 10px 0;
+            border-style: solid;
+            border-color: #000 transparent;
+        }
+
+        /* Controls Area */
+        .dashboard {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            background: #ffffff;
+            padding: 20px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,96,100,0.15);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .inputs {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .expanded-form {
+            display: flex;
+            gap: 10px;
+            font-size: 24px;
+            font-weight: bold;
+            color: #555;
+            background: #f1f8e9;
+            padding: 10px 20px;
+            border-radius: 10px;
+            border: 2px dashed #aaa;
+            min-width: 200px;
+            justify-content: center;
+        }
+        
+        /* Highlighting classes for Expanded Form */
+        .highlight-tens { color: #ff7043; border-bottom: 3px solid #ff7043; }
+        .highlight-ones { color: #00bcd4; border-bottom: 3px solid #00bcd4; }
+        .faded { opacity: 0.3; }
 
         input {
             padding: 10px;
@@ -55,60 +127,60 @@
             text-align: center;
             border: 2px solid #b2ebf2;
             border-radius: 10px;
-            color: #006064;
             outline: none;
         }
-        input:focus { border-color: #00bcd4; }
 
-        button {
-            padding: 10px 25px;
-            font-size: 18px;
+        /* The Big Main Button */
+        #actionBtn {
+            padding: 15px 40px;
+            font-size: 20px;
             background-color: #00bcd4;
             color: white;
             border: none;
-            border-radius: 25px;
+            border-radius: 50px;
             cursor: pointer;
             font-weight: bold;
-            transition: transform 0.1s, background 0.2s;
-            margin-left: 10px;
+            box-shadow: 0 5px 0 #00838f;
+            transition: all 0.1s;
         }
+        #actionBtn:active { box-shadow: 0 2px 0 #00838f; transform: translateY(3px); }
+        #actionBtn:disabled { background-color: #ccc; box-shadow: none; cursor: not-allowed; }
 
-        button:active { transform: scale(0.95); }
-        button:hover { background-color: #0097a7; }
-
-        .character {
-            font-size: 35px;
-            position: absolute;
-            bottom: 70px; /* Aligned with line */
-            /* Transitions are handled in JS for this complex version */
-            pointer-events: none;
-            z-index: 10;
+        #resetBtn {
+            background-color: transparent;
+            color: #ff7043;
+            border: 2px solid #ff7043;
+            padding: 5px 15px;
+            border-radius: 15px;
+            cursor: pointer;
+            margin-top: 5px;
         }
-
-        /* Legend for the kids */
-        .legend {
-            margin-top: 10px;
-            font-size: 14px;
-            color: #555;
-        }
-        .dot { height: 10px; width: 10px; display: inline-block; border-radius: 50%; }
     </style>
 </head>
 <body>
 
-    <h1>🐸 Math Frog's Walk & Jump</h1>
-    <p>Tens are Jumps (Orange) | Ones are Walks (Blue)</p>
+    <h1>🐸 Math Frog: Step-by-Step</h1>
 
-    <div class="controls">
-        <input type="number" id="startNum" placeholder="Start" value="0" min="0" max="999">
-        <span style="font-size: 24px; color:#00bcd4; font-weight:bold;">+</span>
-        <input type="number" id="addNum" placeholder="Add" value="23" min="1" max="100">
-        <button onclick="startAnimationSequence()">Go!</button>
-        <button onclick="reset()" style="background-color: #ff7043;">Reset</button>
+    <div class="dashboard">
+        <div class="inputs">
+            <input type="number" id="startNum" value="0" min="0" max="999">
+            <span style="font-size: 24px;">+</span>
+            <input type="number" id="addNum" value="23" min="1" max="100">
+        </div>
+
+        <div id="expandedZone" class="expanded-form">
+            <span>?</span>
+        </div>
+
+        <button id="actionBtn" onclick="handleNextStep()">Start</button>
+        <button id="resetBtn" onclick="reset()">Reset Everything</button>
     </div>
 
     <div id="scroll-container">
-        <div id="frog" class="character">🐸</div>
+        <div id="frogContainer" class="character-container">
+            <div id="speech" class="speech-bubble">Hello!</div>
+            <div class="frog-emoji">🐸</div>
+        </div>
         <canvas id="numberLine"></canvas>
     </div>
 
@@ -116,20 +188,32 @@
         const container = document.getElementById('scroll-container');
         const canvas = document.getElementById('numberLine');
         const ctx = canvas.getContext('2d');
-        const frog = document.getElementById('frog');
+        const frogContainer = document.getElementById('frogContainer');
+        const speechBubble = document.getElementById('speech');
+        const actionBtn = document.getElementById('actionBtn');
+        const expandedZone = document.getElementById('expandedZone');
 
-        // Configuration
+        // Config
         const TOTAL_UNITS = 1000;
         const PIXELS_PER_UNIT = 40; 
         const LINE_Y = 280; 
-        
-        // Setup Canvas
-        // Note: 40px * 1000 is 40,000px wide. 
-        // This is large but works on most modern desktop browsers.
-        canvas.width = (TOTAL_UNITS * PIXELS_PER_UNIT) + 100;
-        canvas.height = 350;
 
+        // State Machine Variables
+        let currentState = 'IDLE'; // IDLE, EXPAND, JUMPING_TENS, WALKING_ONES, FINISHED
+        let startVal = 0;
+        let addVal = 0;
+        let currentPos = 0;
+        
+        let tensLeft = 0;
+        let onesLeft = 0;
+
+        canvas.width = (TOTAL_UNITS * PIXELS_PER_UNIT) + 100;
+        canvas.height = 380;
+
+        // --- Drawing System ---
         function drawLine() {
+            ctx.clearRect(0,0, canvas.width, canvas.height); // Clear everything
+            
             // Draw Main Line
             ctx.beginPath();
             ctx.moveTo(0, LINE_Y);
@@ -140,25 +224,18 @@
 
             ctx.font = "14px Arial";
             ctx.textAlign = "center";
-            ctx.fillStyle = "#37474f";
 
             for (let i = 0; i <= TOTAL_UNITS; i++) {
                 const x = 50 + (i * PIXELS_PER_UNIT);
-
-                // Tick marks
+                const isTen = (i % 10 === 0);
+                
                 ctx.beginPath();
                 ctx.moveTo(x, LINE_Y);
-                // Long tick for 10s, Short for 1s
-                const isTen = (i % 10 === 0);
-                const height = isTen ? 25 : 10;
-                ctx.lineTo(x, LINE_Y - height);
+                ctx.lineTo(x, LINE_Y - (isTen ? 25 : 10));
                 ctx.strokeStyle = isTen ? '#37474f' : '#b0bec5';
                 ctx.lineWidth = isTen ? 2 : 1;
                 ctx.stroke();
 
-                // Draw EVERY Number
-                // To avoid overlapping, we alternate height or use small font
-                // If it's a multiple of 10, draw it bold and lower
                 if (isTen) {
                     ctx.font = "bold 16px Arial";
                     ctx.fillStyle = "#000";
@@ -171,133 +248,196 @@
             }
         }
 
-        // --- Animation Helpers ---
-
-        // Helper: Pause for X milliseconds (makes async/await easy)
-        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-        // 1. Move Frog visually without animation (teleport)
-        function setFrogPos(num) {
-            const x = 50 + (num * PIXELS_PER_UNIT);
-            frog.style.left = (x - 25) + 'px';
-            frog.style.bottom = "70px";
-            frog.style.transition = "none"; // disable transition for instant set
-            
-            // Auto scroll to keep frog centered
-            const containerCenter = container.clientWidth / 2;
-            container.scrollTo({
-                left: x - containerCenter,
-                behavior: 'smooth'
-            });
-        }
-
-        // 2. Animate a JUMP (Parabola)
-        async function animateJump(startNum, distance) {
-            const startX = 50 + (startNum * PIXELS_PER_UNIT);
-            const endX = 50 + ((startNum + distance) * PIXELS_PER_UNIT);
+        function drawJumpArc(start, dist, color) {
+            const startX = 50 + (start * PIXELS_PER_UNIT);
+            const endX = 50 + ((start + dist) * PIXELS_PER_UNIT);
             const midX = (startX + endX) / 2;
+            const height = dist > 1 ? 150 : 40; // High arc for jumps, low for walks
 
-            // Draw the Orange Arc
             ctx.beginPath();
             ctx.moveTo(startX, LINE_Y);
-            ctx.quadraticCurveTo(midX, LINE_Y - 150, endX, LINE_Y);
-            ctx.strokeStyle = '#ff7043'; // Orange
-            ctx.lineWidth = 4;
-            ctx.setLineDash([10, 5]);
+            ctx.quadraticCurveTo(midX, LINE_Y - height, endX, LINE_Y);
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 3;
+            if(dist > 1) ctx.setLineDash([10, 5]); // Dashed for jumps
             ctx.stroke();
             ctx.setLineDash([]);
-
-            // Animate Frog CSS
-            frog.style.transition = "left 0.6s linear, bottom 0.6s cubic-bezier(0,1.5,1,1.5)"; 
-            // The cubic-bezier creates a 'jump' effect in the bottom property
-            
-            frog.style.left = (endX - 25) + 'px';
-            
-            // Manually animate "up and down" via CSS classes or keyframes is hard dynamically
-            // So we use a little hack: set bottom up, then down halfway through
-            frog.style.bottom = "150px"; 
-            
-            await sleep(300); // Wait for peak
-            frog.style.bottom = "70px"; // Land
-            await sleep(300); // Wait for landing finish
         }
 
-        // 3. Animate a WALK (Small Slide/Hop)
-        async function animateWalk(startNum) {
-            const startX = 50 + (startNum * PIXELS_PER_UNIT);
-            const endX = 50 + ((startNum + 1) * PIXELS_PER_UNIT);
-
-            // Draw Blue small arc
-            ctx.beginPath();
-            ctx.moveTo(startX, LINE_Y);
-            ctx.quadraticCurveTo((startX+endX)/2, LINE_Y - 30, endX, LINE_Y);
-            ctx.strokeStyle = '#00bcd4'; // Blue
-            ctx.lineWidth = 2;
-            ctx.stroke();
-
-            // Animate Frog
-            frog.style.transition = "left 0.3s linear, bottom 0.15s ease-out";
-            frog.style.left = (endX - 25) + 'px';
-            
-            // Hop up
-            frog.style.bottom = "90px";
-            await sleep(150);
-            // Hop down
-            frog.style.transition = "left 0.15s linear, bottom 0.15s ease-in";
-            frog.style.bottom = "70px";
-            await sleep(150);
+        // --- Frog Actions ---
+        function frogSpeak(text) {
+            speechBubble.style.display = 'block';
+            speechBubble.innerHTML = text;
         }
 
-        // --- Main Logic ---
-
-        async function startAnimationSequence() {
-            const start = parseInt(document.getElementById('startNum').value) || 0;
-            const add = parseInt(document.getElementById('addNum').value) || 0;
+        function moveFrog(num, animateType) {
+            const x = 50 + (num * PIXELS_PER_UNIT);
             
-            if(start + add > 1000) { alert("Max 1000!"); return; }
+            // Auto Scroll
+            const containerCenter = container.clientWidth / 2;
+            container.scrollTo({ left: x - containerCenter, behavior: 'smooth' });
 
-            // 1. Calculate Tens and Ones
-            const tens = Math.floor(add / 10);
-            const ones = add % 10;
-            let current = start;
-
-            // 2. Set initial position
-            setFrogPos(current);
-            await sleep(500); // Wait a beat before starting
-
-            // 3. Perform Jumps (Tens)
-            for(let i = 0; i < tens; i++) {
-                await animateJump(current, 10);
-                current += 10;
-                // Auto scroll during animation
-                const x = 50 + (current * PIXELS_PER_UNIT);
-                container.scrollTo({ left: x - (container.clientWidth/2), behavior: 'smooth' });
-                await sleep(200); // Small pause between jumps
+            if (animateType === 'TELEPORT') {
+                frogContainer.style.transition = 'none';
+                frogContainer.style.left = (x - 25) + 'px';
+                frogContainer.style.bottom = "70px";
+            } 
+            else if (animateType === 'JUMP') {
+                // Slower animation (1.0s)
+                frogContainer.style.transition = "left 1.2s linear, bottom 1.2s cubic-bezier(0,1.8,1,1.8)"; 
+                frogContainer.style.left = (x - 25) + 'px';
+                frogContainer.style.bottom = "150px"; // High jump
+                
+                // Reset bottom after transition
+                setTimeout(() => { frogContainer.style.bottom = "70px"; }, 1200);
             }
+            else if (animateType === 'WALK') {
+                frogContainer.style.transition = "left 0.5s linear, bottom 0.25s ease-out";
+                frogContainer.style.left = (x - 25) + 'px';
+                frogContainer.style.bottom = "90px"; // Small hop
+                
+                setTimeout(() => { 
+                    frogContainer.style.transition = "left 0.25s linear, bottom 0.25s ease-in";
+                    frogContainer.style.bottom = "70px"; 
+                }, 250);
+            }
+        }
 
-            // 4. Perform Walks (Ones)
-            for(let i = 0; i < ones; i++) {
-                await animateWalk(current);
-                current += 1;
-                 // Auto scroll during animation
-                 const x = 50 + (current * PIXELS_PER_UNIT);
-                 container.scrollTo({ left: x - (container.clientWidth/2), behavior: 'smooth' });
+        // --- State Machine Logic ---
+
+        function handleNextStep() {
+            startVal = parseInt(document.getElementById('startNum').value) || 0;
+            addVal = parseInt(document.getElementById('addNum').value) || 0;
+
+            if (currentState === 'IDLE') {
+                // Init Calculation
+                if(startVal + addVal > 1000) { alert("Max 1000"); return; }
+                
+                tensLeft = Math.floor(addVal / 10);
+                onesLeft = addVal % 10;
+                currentPos = startVal;
+                
+                // Disable inputs
+                document.getElementById('startNum').disabled = true;
+                document.getElementById('addNum').disabled = true;
+
+                // Move Frog to Start
+                moveFrog(startVal, 'TELEPORT');
+                
+                frogSpeak(`Let's add ${addVal}! First, let's break it apart.`);
+                actionBtn.innerText = "Show Expanded Form";
+                currentState = 'EXPAND';
+            }
+            else if (currentState === 'EXPAND') {
+                // Update display to show expanded form
+                const tensText = tensLeft * 10;
+                expandedZone.innerHTML = `
+                    <span>${addVal}</span> = 
+                    <span id="zoneTens">${tensText}</span> + 
+                    <span id="zoneOnes">${onesLeft}</span>
+                `;
+                
+                frogSpeak(`I see ${tensLeft} tens and ${onesLeft} ones.`);
+                
+                // Decide next step
+                if (tensLeft > 0) {
+                    actionBtn.innerText = "Jump 10";
+                    currentState = 'JUMPING_TENS';
+                    // Highlight Tens
+                    document.getElementById('zoneTens').className = 'highlight-tens';
+                    document.getElementById('zoneOnes').className = 'faded';
+                } else {
+                    actionBtn.innerText = "Walk 1";
+                    currentState = 'WALKING_ONES';
+                    // Highlight Ones
+                    document.getElementById('zoneTens').className = 'faded';
+                    document.getElementById('zoneOnes').className = 'highlight-ones';
+                }
+            }
+            else if (currentState === 'JUMPING_TENS') {
+                if (tensLeft > 0) {
+                    // Perform 1 Jump
+                    drawJumpArc(currentPos, 10, '#ff7043');
+                    moveFrog(currentPos + 10, 'JUMP');
+                    
+                    currentPos += 10;
+                    tensLeft--;
+                    frogSpeak("Big Jump! +10");
+                    
+                    // Button Logic: Disable briefly during animation
+                    actionBtn.disabled = true;
+                    setTimeout(() => { actionBtn.disabled = false; }, 1200);
+
+                    // Check if more tens or switch to ones
+                    if (tensLeft === 0) {
+                        if (onesLeft > 0) {
+                            currentState = 'WALKING_ONES';
+                            actionBtn.innerText = "Switch to Ones";
+                        } else {
+                            currentState = 'FINISHED';
+                            actionBtn.innerText = "Finish!";
+                        }
+                    } else {
+                        actionBtn.innerText = "Jump 10 again";
+                    }
+                }
+            }
+            else if (currentState === 'WALKING_ONES') {
+                // First, ensure highlighting is correct if we just switched
+                document.getElementById('zoneTens').className = 'faded';
+                document.getElementById('zoneOnes').className = 'highlight-ones';
+
+                if (onesLeft > 0) {
+                    drawJumpArc(currentPos, 1, '#00bcd4');
+                    moveFrog(currentPos + 1, 'WALK');
+                    
+                    currentPos += 1;
+                    onesLeft--;
+                    frogSpeak("Small Hop! +1");
+
+                    actionBtn.disabled = true;
+                    setTimeout(() => { actionBtn.disabled = false; }, 500);
+
+                    if (onesLeft === 0) {
+                        currentState = 'FINISHED';
+                        actionBtn.innerText = "Finish!";
+                    } else {
+                        actionBtn.innerText = "Walk 1 again";
+                    }
+                }
+            }
+            else if (currentState === 'FINISHED') {
+                frogSpeak(`Done! The answer is ${currentPos}.`);
+                actionBtn.innerText = "Great Job! (Reset)";
+                actionBtn.style.backgroundColor = "#4caf50";
+                currentState = 'RESET_WAIT';
+            }
+            else if (currentState === 'RESET_WAIT') {
+                reset();
             }
         }
 
         function reset() {
-            // Clear trails
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawLine(); // Redraw static line
+            ctx.clearRect(0,0, canvas.width, canvas.height);
+            drawLine();
             
+            document.getElementById('startNum').disabled = false;
+            document.getElementById('addNum').disabled = false;
             document.getElementById('startNum').value = 0;
             document.getElementById('addNum').value = 23;
-            setFrogPos(0);
+            
+            actionBtn.innerText = "Start";
+            actionBtn.style.backgroundColor = "#00bcd4";
+            expandedZone.innerHTML = "<span>?</span>";
+            speechBubble.style.display = 'none';
+            
+            currentState = 'IDLE';
+            moveFrog(0, 'TELEPORT');
         }
 
-        // Initialize
+        // Init
         drawLine();
-        setFrogPos(0);
+        moveFrog(0, 'TELEPORT');
 
     </script>
 </body>
