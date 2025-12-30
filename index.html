@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Frog: Step-by-Step</title>
+    <title>Math Frog: Grouped Addition</title>
     <style>
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
@@ -18,7 +18,7 @@
         /* Scroll Container */
         #scroll-container {
             width: 95%;
-            height: 380px; /* Taller for speech bubble */
+            height: 450px; /* Taller for high flying */
             overflow-x: auto;
             margin: 20px auto;
             border: 4px solid #00838f;
@@ -40,181 +40,157 @@
         .character-container {
             position: absolute;
             bottom: 70px;
-            left: 25px; /* Initial offset */
-            transition: left 1.0s ease-in-out, bottom 1.0s ease-in-out; /* Slower animation */
+            left: 25px; 
+            transition: left 1.0s ease-in-out, bottom 1.0s ease-in-out;
             z-index: 10;
-            width: 50px;
-            height: 50px;
+            width: 60px;
+            height: 60px;
             pointer-events: none;
         }
 
-        .frog-emoji {
-            font-size: 40px;
-            display: block;
-            text-align: center;
-        }
+        .frog-emoji { font-size: 40px; display: inline-block; }
+        .rocket-emoji { font-size: 30px; display: none; position: absolute; right: -10px; top: 0; }
 
         /* Speech Bubble */
         .speech-bubble {
             background: #fff;
             border: 2px solid #000;
             border-radius: 10px;
-            padding: 5px 10px;
+            padding: 8px;
             position: absolute;
-            bottom: 50px; /* Above the frog */
-            left: -60px; /* Center relative to frog */
-            width: 160px;
+            bottom: 60px; 
+            left: -50px; 
+            width: 180px;
             font-size: 14px;
             color: #000;
             text-align: center;
-            display: none; /* Hidden initially */
+            display: none; 
+            z-index: 20;
         }
-        /* Tiny triangle for speech bubble */
         .speech-bubble:after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            margin-left: -10px;
-            border-width: 10px 10px 0;
-            border-style: solid;
-            border-color: #000 transparent;
+            content: ''; position: absolute; bottom: -10px; left: 50%;
+            margin-left: -10px; border-width: 10px 10px 0; border-style: solid; border-color: #000 transparent;
         }
 
-        /* Controls Area */
+        /* Dashboard */
         .dashboard {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 15px;
             background: #ffffff;
             padding: 20px;
             border-radius: 20px;
             box-shadow: 0 10px 20px rgba(0,96,100,0.15);
-            max-width: 600px;
+            max-width: 800px;
             margin: 0 auto;
         }
 
-        .inputs {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
+        .inputs { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px; }
 
-        .expanded-form {
+        /* Expanded Form Box */
+        .expanded-box {
             display: flex;
-            gap: 10px;
-            font-size: 24px;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            font-size: 22px;
             font-weight: bold;
             color: #555;
             background: #f1f8e9;
-            padding: 10px 20px;
+            padding: 15px;
             border-radius: 10px;
             border: 2px dashed #aaa;
-            min-width: 200px;
-            justify-content: center;
+            margin-bottom: 15px;
         }
         
-        /* Highlighting classes for Expanded Form */
-        .highlight-tens { color: #ff7043; border-bottom: 3px solid #ff7043; }
-        .highlight-ones { color: #00bcd4; border-bottom: 3px solid #00bcd4; }
-        .faded { opacity: 0.3; }
-
-        input {
-            padding: 10px;
-            font-size: 20px;
-            width: 80px;
-            text-align: center;
-            border: 2px solid #b2ebf2;
-            border-radius: 10px;
-            outline: none;
+        .number-group { border: 1px solid #ddd; padding: 5px 10px; border-radius: 8px; background: #fff; }
+        .part { display: inline-block; padding: 0 5px; position: relative; transition: all 0.3s; }
+        
+        /* Styles for active/done parts */
+        .highlight-hundreds { color: #9c27b0; font-weight: 900; } /* Purple */
+        .highlight-tens { color: #e65100; font-weight: 900; }     /* Orange */
+        .highlight-ones { color: #00bcd4; font-weight: 900; }     /* Blue */
+        
+        /* The Red Slant Line Strikethrough */
+        .crossed { opacity: 0.5; color: #999; }
+        .crossed::after {
+            content: '';
+            position: absolute;
+            top: 50%; left: -10%; width: 120%; height: 2px;
+            background: #f44336;
+            transform: rotate(-15deg);
         }
 
-        /* The Big Main Button */
+        input { padding: 10px; font-size: 20px; width: 80px; text-align: center; border: 2px solid #b2ebf2; border-radius: 10px; }
+        
         #actionBtn {
-            padding: 15px 40px;
-            font-size: 20px;
-            background-color: #00bcd4;
-            color: white;
-            border: none;
-            border-radius: 50px;
-            cursor: pointer;
-            font-weight: bold;
-            box-shadow: 0 5px 0 #00838f;
-            transition: all 0.1s;
+            padding: 15px 40px; font-size: 20px; background-color: #00bcd4; color: white;
+            border: none; border-radius: 50px; cursor: pointer; font-weight: bold;
+            box-shadow: 0 5px 0 #00838f; margin-bottom: 10px;
         }
-        #actionBtn:active { box-shadow: 0 2px 0 #00838f; transform: translateY(3px); }
-        #actionBtn:disabled { background-color: #ccc; box-shadow: none; cursor: not-allowed; }
+        #actionBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #00838f; }
+        #actionBtn:disabled { background-color: #ccc; box-shadow: none; cursor: default; }
 
-        #resetBtn {
-            background-color: transparent;
-            color: #ff7043;
-            border: 2px solid #ff7043;
-            padding: 5px 15px;
-            border-radius: 15px;
-            cursor: pointer;
-            margin-top: 5px;
-        }
     </style>
 </head>
 <body>
 
-    <h1>🐸 Math Frog: Step-by-Step</h1>
+    <h1>🐸 Math Frog: Place Value Party</h1>
 
     <div class="dashboard">
         <div class="inputs">
-            <input type="number" id="startNum" value="0" min="0" max="999">
+            <input type="number" id="startNum" value="123" min="0" max="500">
             <span style="font-size: 24px;">+</span>
-            <input type="number" id="addNum" value="23" min="1" max="100">
+            <input type="number" id="addNum" value="46" min="1" max="500">
         </div>
 
-        <div id="expandedZone" class="expanded-form">
-            <span>?</span>
+        <div id="expandedZone" class="expanded-box">
+            <span>Enter numbers and click Start!</span>
         </div>
 
-        <button id="actionBtn" onclick="handleNextStep()">Start</button>
-        <button id="resetBtn" onclick="reset()">Reset Everything</button>
+        <button id="actionBtn" onclick="handleInteraction()">Start</button>
+        <br>
+        <button onclick="reset()" style="background:none; border:none; color:red; cursor:pointer; text-decoration:underline;">Reset</button>
     </div>
 
     <div id="scroll-container">
         <div id="frogContainer" class="character-container">
             <div id="speech" class="speech-bubble">Hello!</div>
             <div class="frog-emoji">🐸</div>
+            <div id="rocket" class="rocket-emoji">🚀</div>
         </div>
         <canvas id="numberLine"></canvas>
     </div>
 
     <script>
+        // -- Setup --
         const container = document.getElementById('scroll-container');
         const canvas = document.getElementById('numberLine');
         const ctx = canvas.getContext('2d');
         const frogContainer = document.getElementById('frogContainer');
+        const rocket = document.getElementById('rocket');
         const speechBubble = document.getElementById('speech');
         const actionBtn = document.getElementById('actionBtn');
         const expandedZone = document.getElementById('expandedZone');
 
-        // Config
-        const TOTAL_UNITS = 1000;
         const PIXELS_PER_UNIT = 40; 
-        const LINE_Y = 280; 
+        const LINE_Y = 350; // Lower line to allow high flying
+        let TOTAL_UNITS = 1000;
 
-        // State Machine Variables
-        let currentState = 'IDLE'; // IDLE, EXPAND, JUMPING_TENS, WALKING_ONES, FINISHED
-        let startVal = 0;
-        let addVal = 0;
+        // -- State Machine --
+        let state = 'IDLE'; 
         let currentPos = 0;
         
-        let tensLeft = 0;
-        let onesLeft = 0;
+        // We will build a "Queue" of steps. Each step object:
+        // { type: 'FLY'|'JUMP'|'WALK', val: 100|10|1, sourceId: 'start-h', desc: 'Flying 100!' }
+        let stepQueue = [];
+        let currentStepIndex = 0;
 
         canvas.width = (TOTAL_UNITS * PIXELS_PER_UNIT) + 100;
-        canvas.height = 380;
+        canvas.height = 450;
 
-        // --- Drawing System ---
+        // -- Graphics --
         function drawLine() {
-            ctx.clearRect(0,0, canvas.width, canvas.height); // Clear everything
+            ctx.clearRect(0,0, canvas.width, canvas.height);
             
-            // Draw Main Line
+            // Main Line
             ctx.beginPath();
             ctx.moveTo(0, LINE_Y);
             ctx.lineTo(canvas.width, LINE_Y);
@@ -228,192 +204,224 @@
             for (let i = 0; i <= TOTAL_UNITS; i++) {
                 const x = 50 + (i * PIXELS_PER_UNIT);
                 const isTen = (i % 10 === 0);
+                const isHundred = (i % 100 === 0);
                 
                 ctx.beginPath();
                 ctx.moveTo(x, LINE_Y);
-                ctx.lineTo(x, LINE_Y - (isTen ? 25 : 10));
+                let tickHeight = 10;
+                if(isTen) tickHeight = 20;
+                if(isHundred) tickHeight = 35;
+
+                ctx.lineTo(x, LINE_Y - tickHeight);
                 ctx.strokeStyle = isTen ? '#37474f' : '#b0bec5';
-                ctx.lineWidth = isTen ? 2 : 1;
+                ctx.lineWidth = isHundred ? 3 : (isTen ? 2 : 1);
                 ctx.stroke();
 
                 if (isTen) {
-                    ctx.font = "bold 16px Arial";
-                    ctx.fillStyle = "#000";
-                    ctx.fillText(i, x, LINE_Y + 30);
-                } else {
-                    ctx.font = "12px Arial";
-                    ctx.fillStyle = "#78909c";
+                    ctx.font = isHundred ? "bold 18px Arial" : "bold 14px Arial";
+                    ctx.fillStyle = isHundred ? "#000" : "#555";
                     ctx.fillText(i, x, LINE_Y + 25);
                 }
             }
         }
 
-        function drawJumpArc(start, dist, color) {
+        function drawArc(start, dist, color, height) {
             const startX = 50 + (start * PIXELS_PER_UNIT);
             const endX = 50 + ((start + dist) * PIXELS_PER_UNIT);
             const midX = (startX + endX) / 2;
-            const height = dist > 1 ? 150 : 40; // High arc for jumps, low for walks
 
             ctx.beginPath();
             ctx.moveTo(startX, LINE_Y);
             ctx.quadraticCurveTo(midX, LINE_Y - height, endX, LINE_Y);
             ctx.strokeStyle = color;
             ctx.lineWidth = 3;
-            if(dist > 1) ctx.setLineDash([10, 5]); // Dashed for jumps
+            if(dist >= 10) ctx.setLineDash([10, 5]); 
             ctx.stroke();
             ctx.setLineDash([]);
         }
 
-        // --- Frog Actions ---
-        function frogSpeak(text) {
-            speechBubble.style.display = 'block';
-            speechBubble.innerHTML = text;
-        }
+        // -- Animation Controller --
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-        function moveFrog(num, animateType) {
-            const x = 50 + (num * PIXELS_PER_UNIT);
+        async function animateFrog(newPos, type) {
+            const x = 50 + (newPos * PIXELS_PER_UNIT);
             
             // Auto Scroll
             const containerCenter = container.clientWidth / 2;
             container.scrollTo({ left: x - containerCenter, behavior: 'smooth' });
 
-            if (animateType === 'TELEPORT') {
-                frogContainer.style.transition = 'none';
+            if (type === 'FLY') {
+                rocket.style.display = 'block';
+                frogContainer.style.transition = "left 1.5s ease-in-out, bottom 1.5s cubic-bezier(0,1.5,1,1.5)";
                 frogContainer.style.left = (x - 25) + 'px';
+                frogContainer.style.bottom = "250px"; // Very High
+                await sleep(1500);
+                frogContainer.style.bottom = "70px"; // Land
+                await sleep(500);
+                rocket.style.display = 'none';
+            } 
+            else if (type === 'JUMP') {
+                frogContainer.style.transition = "left 1.0s linear, bottom 1.0s cubic-bezier(0,1.8,1,1.8)";
+                frogContainer.style.left = (x - 25) + 'px';
+                frogContainer.style.bottom = "140px"; // Medium High
+                await sleep(1000);
                 frogContainer.style.bottom = "70px";
             } 
-            else if (animateType === 'JUMP') {
-                // Slower animation (1.0s)
-                frogContainer.style.transition = "left 1.2s linear, bottom 1.2s cubic-bezier(0,1.8,1,1.8)"; 
-                frogContainer.style.left = (x - 25) + 'px';
-                frogContainer.style.bottom = "150px"; // High jump
-                
-                // Reset bottom after transition
-                setTimeout(() => { frogContainer.style.bottom = "70px"; }, 1200);
-            }
-            else if (animateType === 'WALK') {
+            else { // WALK
                 frogContainer.style.transition = "left 0.5s linear, bottom 0.25s ease-out";
                 frogContainer.style.left = (x - 25) + 'px';
-                frogContainer.style.bottom = "90px"; // Small hop
-                
-                setTimeout(() => { 
-                    frogContainer.style.transition = "left 0.25s linear, bottom 0.25s ease-in";
-                    frogContainer.style.bottom = "70px"; 
-                }, 250);
+                frogContainer.style.bottom = "90px"; 
+                await sleep(250);
+                frogContainer.style.transition = "left 0.25s linear, bottom 0.25s ease-in";
+                frogContainer.style.bottom = "70px";
+            }
+            await sleep(200);
+        }
+
+        // -- Logic --
+
+        function decompose(num) {
+            return {
+                h: Math.floor(num / 100),
+                t: Math.floor((num % 100) / 10),
+                o: num % 10
+            };
+        }
+
+        function generateQueue(sVal, aVal) {
+            const s = decompose(sVal);
+            const a = decompose(aVal);
+            const q = [];
+
+            // 1. Hundreds (Purple)
+            for(let i=0; i<s.h; i++) q.push({type:'FLY', val:100, color:'#9c27b0', id:'s-h'});
+            for(let i=0; i<a.h; i++) q.push({type:'FLY', val:100, color:'#9c27b0', id:'a-h'});
+
+            // 2. Tens (Orange)
+            for(let i=0; i<s.t; i++) q.push({type:'JUMP', val:10, color:'#e65100', id:'s-t'});
+            for(let i=0; i<a.t; i++) q.push({type:'JUMP', val:10, color:'#e65100', id:'a-t'});
+
+            // 3. Ones (Blue)
+            for(let i=0; i<s.o; i++) q.push({type:'WALK', val:1, color:'#00bcd4', id:'s-o'});
+            for(let i=0; i<a.o; i++) q.push({type:'WALK', val:1, color:'#00bcd4', id:'a-o'});
+
+            return q;
+        }
+
+        function handleInteraction() {
+            if (state === 'IDLE') {
+                initialize();
+            } else if (state === 'RUNNING') {
+                processNextStep();
+            } else if (state === 'DONE') {
+                reset();
             }
         }
 
-        // --- State Machine Logic ---
+        function initialize() {
+            const sVal = parseInt(document.getElementById('startNum').value) || 0;
+            const aVal = parseInt(document.getElementById('addNum').value) || 0;
 
-        function handleNextStep() {
-            startVal = parseInt(document.getElementById('startNum').value) || 0;
-            addVal = parseInt(document.getElementById('addNum').value) || 0;
+            if (sVal + aVal > 1000) { alert("Total cannot exceed 1000!"); return; }
 
-            if (currentState === 'IDLE') {
-                // Init Calculation
-                if(startVal + addVal > 1000) { alert("Max 1000"); return; }
-                
-                tensLeft = Math.floor(addVal / 10);
-                onesLeft = addVal % 10;
-                currentPos = startVal;
-                
-                // Disable inputs
-                document.getElementById('startNum').disabled = true;
-                document.getElementById('addNum').disabled = true;
+            // 1. Setup Data
+            const s = decompose(sVal);
+            const a = decompose(aVal);
+            
+            // 2. Render Expanded Form HTML
+            let html = `<div class="number-group">`;
+            if(s.h) html += `<span id="s-h" class="part highlight-hundreds">${s.h}00</span> + `;
+            if(s.t) html += `<span id="s-t" class="part highlight-tens">${s.t}0</span> + `;
+            html += `<span id="s-o" class="part highlight-ones">${s.o}</span></div>`;
+            
+            html += ` <span style="font-size:30px">+</span> `;
+            
+            html += `<div class="number-group">`;
+            if(a.h) html += `<span id="a-h" class="part highlight-hundreds">${a.h}00</span> + `;
+            if(a.t) html += `<span id="a-t" class="part highlight-tens">${a.t}0</span> + `;
+            html += `<span id="a-o" class="part highlight-ones">${a.o}</span></div>`;
 
-                // Move Frog to Start
-                moveFrog(startVal, 'TELEPORT');
-                
-                frogSpeak(`Let's add ${addVal}! First, let's break it apart.`);
-                actionBtn.innerText = "Show Expanded Form";
-                currentState = 'EXPAND';
-            }
-            else if (currentState === 'EXPAND') {
-                // Update display to show expanded form
-                const tensText = tensLeft * 10;
-                expandedZone.innerHTML = `
-                    <span>${addVal}</span> = 
-                    <span id="zoneTens">${tensText}</span> + 
-                    <span id="zoneOnes">${onesLeft}</span>
-                `;
-                
-                frogSpeak(`I see ${tensLeft} tens and ${onesLeft} ones.`);
-                
-                // Decide next step
-                if (tensLeft > 0) {
-                    actionBtn.innerText = "Jump 10";
-                    currentState = 'JUMPING_TENS';
-                    // Highlight Tens
-                    document.getElementById('zoneTens').className = 'highlight-tens';
-                    document.getElementById('zoneOnes').className = 'faded';
-                } else {
-                    actionBtn.innerText = "Walk 1";
-                    currentState = 'WALKING_ONES';
-                    // Highlight Ones
-                    document.getElementById('zoneTens').className = 'faded';
-                    document.getElementById('zoneOnes').className = 'highlight-ones';
-                }
-            }
-            else if (currentState === 'JUMPING_TENS') {
-                if (tensLeft > 0) {
-                    // Perform 1 Jump
-                    drawJumpArc(currentPos, 10, '#ff7043');
-                    moveFrog(currentPos + 10, 'JUMP');
-                    
-                    currentPos += 10;
-                    tensLeft--;
-                    frogSpeak("Big Jump! +10");
-                    
-                    // Button Logic: Disable briefly during animation
-                    actionBtn.disabled = true;
-                    setTimeout(() => { actionBtn.disabled = false; }, 1200);
+            expandedZone.innerHTML = html;
 
-                    // Check if more tens or switch to ones
-                    if (tensLeft === 0) {
-                        if (onesLeft > 0) {
-                            currentState = 'WALKING_ONES';
-                            actionBtn.innerText = "Switch to Ones";
-                        } else {
-                            currentState = 'FINISHED';
-                            actionBtn.innerText = "Finish!";
-                        }
-                    } else {
-                        actionBtn.innerText = "Jump 10 again";
-                    }
-                }
-            }
-            else if (currentState === 'WALKING_ONES') {
-                // First, ensure highlighting is correct if we just switched
-                document.getElementById('zoneTens').className = 'faded';
-                document.getElementById('zoneOnes').className = 'highlight-ones';
+            // 3. Build Queue
+            stepQueue = generateQueue(sVal, aVal);
+            currentStepIndex = 0;
+            currentPos = 0;
+            
+            // 4. Move Frog to 0
+            frogContainer.style.transition = 'none';
+            const x = 50 + (0 * PIXELS_PER_UNIT);
+            frogContainer.style.left = (x - 25) + 'px';
+            container.scrollLeft = 0;
 
-                if (onesLeft > 0) {
-                    drawJumpArc(currentPos, 1, '#00bcd4');
-                    moveFrog(currentPos + 1, 'WALK');
-                    
-                    currentPos += 1;
-                    onesLeft--;
-                    frogSpeak("Small Hop! +1");
+            // 5. Start
+            state = 'RUNNING';
+            speechBubble.style.display = 'block';
+            speechBubble.innerText = "I'm starting at 0. Let's add the Hundreds first!";
+            actionBtn.innerText = "Next Step";
+            
+            // Disable inputs
+            document.getElementById('startNum').disabled = true;
+            document.getElementById('addNum').disabled = true;
+        }
 
-                    actionBtn.disabled = true;
-                    setTimeout(() => { actionBtn.disabled = false; }, 500);
-
-                    if (onesLeft === 0) {
-                        currentState = 'FINISHED';
-                        actionBtn.innerText = "Finish!";
-                    } else {
-                        actionBtn.innerText = "Walk 1 again";
-                    }
-                }
-            }
-            else if (currentState === 'FINISHED') {
-                frogSpeak(`Done! The answer is ${currentPos}.`);
-                actionBtn.innerText = "Great Job! (Reset)";
+        async function processNextStep() {
+            if (currentStepIndex >= stepQueue.length) {
+                // All done
+                speechBubble.innerText = `We made it! The answer is ${currentPos}.`;
+                actionBtn.innerText = "Reset";
                 actionBtn.style.backgroundColor = "#4caf50";
-                currentState = 'RESET_WAIT';
+                state = 'DONE';
+                return;
             }
-            else if (currentState === 'RESET_WAIT') {
-                reset();
+
+            // Get current action
+            const step = stepQueue[currentStepIndex];
+            actionBtn.disabled = true; // Prevent spam clicking
+
+            // 1. Update Speech based on type
+            if(step.type === 'FLY') speechBubble.innerText = "Flying +100!";
+            if(step.type === 'JUMP') speechBubble.innerText = "Jumping +10!";
+            if(step.type === 'WALK') speechBubble.innerText = "Walking +1!";
+
+            // 2. Draw Arc & Animate Frog
+            // Height logic: Fly=200, Jump=140, Walk=40
+            const h = step.type === 'FLY' ? 200 : (step.type === 'JUMP' ? 140 : 40);
+            drawArc(currentPos, step.val, step.color, h);
+            
+            await animateFrog(currentPos + step.val, step.type);
+            currentPos += step.val;
+
+            // 3. Logic to "Cross Out" the number part
+            // We check if this is the LAST step for this specific part ID
+            // Look ahead in queue to see if same ID exists
+            let isLastOfGroup = true;
+            for(let i = currentStepIndex + 1; i < stepQueue.length; i++) {
+                if(stepQueue[i].id === step.id) {
+                    isLastOfGroup = false;
+                    break;
+                }
+            }
+
+            if(isLastOfGroup) {
+                const el = document.getElementById(step.id);
+                if(el) el.classList.add('crossed');
+            }
+
+            // 4. Prepare for next
+            currentStepIndex++;
+            actionBtn.disabled = false;
+            
+            // Check if next step type changes for speech bubble hint
+            if(currentStepIndex < stepQueue.length) {
+                const nextType = stepQueue[currentStepIndex].type;
+                if(nextType !== step.type) {
+                    if(nextType === 'JUMP') speechBubble.innerText = "Done with Hundreds. Now Tens!";
+                    if(nextType === 'WALK') speechBubble.innerText = "Done with Tens. Now Ones!";
+                }
+            } else {
+                 speechBubble.innerText = "Finished! Click to see result.";
+                 actionBtn.innerText = "Finish";
             }
         }
 
@@ -423,22 +431,21 @@
             
             document.getElementById('startNum').disabled = false;
             document.getElementById('addNum').disabled = false;
-            document.getElementById('startNum').value = 0;
-            document.getElementById('addNum').value = 23;
             
+            expandedZone.innerHTML = "<span>Enter numbers and click Start!</span>";
+            speechBubble.style.display = 'none';
+            rocket.style.display = 'none';
             actionBtn.innerText = "Start";
             actionBtn.style.backgroundColor = "#00bcd4";
-            expandedZone.innerHTML = "<span>?</span>";
-            speechBubble.style.display = 'none';
             
-            currentState = 'IDLE';
-            moveFrog(0, 'TELEPORT');
+            state = 'IDLE';
+            frogContainer.style.transition = 'none';
+            frogContainer.style.left = '25px'; // Back to 0
+            container.scrollLeft = 0;
         }
 
         // Init
         drawLine();
-        moveFrog(0, 'TELEPORT');
-
     </script>
 </body>
 </html>
