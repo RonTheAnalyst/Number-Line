@@ -3,88 +3,108 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Frog Addition: 0-1000</title>
+    <title>Math Frog: Walk & Jump</title>
     <style>
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
-            background-color: #f0f8ff;
+            background-color: #e0f7fa;
             text-align: center;
             margin: 0;
             padding: 20px;
-            overflow-x: hidden;
         }
 
-        h1 { color: #2c3e50; }
+        h1 { color: #006064; margin-bottom: 5px;}
+        p { color: #00838f; margin-top: 0;}
 
-        /* The scrolling container for the number line */
+        /* Scroll Container */
         #scroll-container {
-            width: 90%;
-            height: 300px;
-            overflow-x: auto; /* Allows horizontal scrolling */
+            width: 95%;
+            height: 350px;
+            overflow-x: auto;
             margin: 20px auto;
-            border: 4px solid #34495e;
+            border: 4px solid #00838f;
             border-radius: 15px;
             background-color: #fff;
             position: relative;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
         }
 
         canvas {
             display: block;
-            background: linear-gradient(to bottom, #ffffff 80%, #e0e0e0 100%);
+            /* A subtle grid background to make it look like graph paper */
+            background-image: 
+                linear-gradient(#eee 1px, transparent 1px),
+                linear-gradient(90deg, #eee 1px, transparent 1px);
+            background-size: 20px 20px;
         }
 
-        /* Controls Area */
+        /* Controls */
         .controls {
-            background: #fff;
-            padding: 20px;
-            border-radius: 10px;
+            background: #ffffff;
+            padding: 15px 30px;
+            border-radius: 50px;
             display: inline-block;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            box-shadow: 0 10px 20px rgba(0,96,100,0.15);
+            border: 2px solid #b2ebf2;
         }
 
         input {
             padding: 10px;
-            font-size: 18px;
+            font-size: 20px;
             width: 80px;
             text-align: center;
-            border: 2px solid #ddd;
-            border-radius: 5px;
+            border: 2px solid #b2ebf2;
+            border-radius: 10px;
+            color: #006064;
+            outline: none;
         }
+        input:focus { border-color: #00bcd4; }
 
         button {
-            padding: 10px 20px;
+            padding: 10px 25px;
             font-size: 18px;
-            background-color: #27ae60;
+            background-color: #00bcd4;
             color: white;
             border: none;
-            border-radius: 5px;
+            border-radius: 25px;
             cursor: pointer;
-            transition: background 0.2s;
+            font-weight: bold;
+            transition: transform 0.1s, background 0.2s;
+            margin-left: 10px;
         }
 
-        button:hover { background-color: #219150; }
+        button:active { transform: scale(0.95); }
+        button:hover { background-color: #0097a7; }
 
         .character {
-            font-size: 40px; /* Size of our Frog */
+            font-size: 35px;
             position: absolute;
-            bottom: 60px; /* Adjust to sit on line */
-            transition: left 1s ease-in-out, bottom 0.5s ease-in-out;
+            bottom: 70px; /* Aligned with line */
+            /* Transitions are handled in JS for this complex version */
             pointer-events: none;
+            z-index: 10;
         }
+
+        /* Legend for the kids */
+        .legend {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
+        }
+        .dot { height: 10px; width: 10px; display: inline-block; border-radius: 50%; }
     </style>
 </head>
 <body>
 
-    <h1>🐸 Math Frog's Big Jump</h1>
-    <p>Enter a starting number and how much to add!</p>
+    <h1>🐸 Math Frog's Walk & Jump</h1>
+    <p>Tens are Jumps (Orange) | Ones are Walks (Blue)</p>
 
     <div class="controls">
         <input type="number" id="startNum" placeholder="Start" value="0" min="0" max="999">
-        <span>+</span>
-        <input type="number" id="addNum" placeholder="Add" value="10" min="1" max="1000">
-        <button onclick="performJump()">Jump!</button>
-        <button onclick="reset()" style="background-color: #e74c3c;">Reset</button>
+        <span style="font-size: 24px; color:#00bcd4; font-weight:bold;">+</span>
+        <input type="number" id="addNum" placeholder="Add" value="23" min="1" max="100">
+        <button onclick="startAnimationSequence()">Go!</button>
+        <button onclick="reset()" style="background-color: #ff7043;">Reset</button>
     </div>
 
     <div id="scroll-container">
@@ -100,138 +120,184 @@
 
         // Configuration
         const TOTAL_UNITS = 1000;
-        const PIXELS_PER_UNIT = 40; // Space between numbers
-        const TICK_HEIGHT = 20;
-        const LINE_Y = 250; // Y position of the main line
+        const PIXELS_PER_UNIT = 40; 
+        const LINE_Y = 280; 
         
-        // State
-        let currentPosition = 0;
+        // Setup Canvas
+        // Note: 40px * 1000 is 40,000px wide. 
+        // This is large but works on most modern desktop browsers.
+        canvas.width = (TOTAL_UNITS * PIXELS_PER_UNIT) + 100;
+        canvas.height = 350;
 
-        // Initialize Canvas Size
-        // Width is huge to accommodate 0 to 1000
-        canvas.width = (TOTAL_UNITS * PIXELS_PER_UNIT) + 200; 
-        canvas.height = 300;
-
-        // Draw the static number line
         function drawLine() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            
+            // Draw Main Line
             ctx.beginPath();
             ctx.moveTo(0, LINE_Y);
             ctx.lineTo(canvas.width, LINE_Y);
-            ctx.strokeStyle = '#333';
+            ctx.strokeStyle = '#455a64';
             ctx.lineWidth = 3;
             ctx.stroke();
 
-            ctx.font = "16px Arial";
+            ctx.font = "14px Arial";
             ctx.textAlign = "center";
-            ctx.fillStyle = "#555";
+            ctx.fillStyle = "#37474f";
 
             for (let i = 0; i <= TOTAL_UNITS; i++) {
-                const x = 50 + (i * PIXELS_PER_UNIT); // 50px padding start
+                const x = 50 + (i * PIXELS_PER_UNIT);
 
-                // Draw Ticks
+                // Tick marks
                 ctx.beginPath();
                 ctx.moveTo(x, LINE_Y);
-                // Make every 10th tick longer
-                const height = (i % 10 === 0) ? TICK_HEIGHT * 2 : TICK_HEIGHT;
+                // Long tick for 10s, Short for 1s
+                const isTen = (i % 10 === 0);
+                const height = isTen ? 25 : 10;
                 ctx.lineTo(x, LINE_Y - height);
-                ctx.strokeStyle = (i % 10 === 0) ? '#000' : '#888';
-                ctx.lineWidth = (i % 10 === 0) ? 2 : 1;
+                ctx.strokeStyle = isTen ? '#37474f' : '#b0bec5';
+                ctx.lineWidth = isTen ? 2 : 1;
                 ctx.stroke();
 
-                // Draw Numbers (every 5 units to avoid clutter, or every 1 if zoomed in)
-                if (i % 5 === 0) {
+                // Draw EVERY Number
+                // To avoid overlapping, we alternate height or use small font
+                // If it's a multiple of 10, draw it bold and lower
+                if (isTen) {
+                    ctx.font = "bold 16px Arial";
+                    ctx.fillStyle = "#000";
+                    ctx.fillText(i, x, LINE_Y + 30);
+                } else {
+                    ctx.font = "12px Arial";
+                    ctx.fillStyle = "#78909c";
                     ctx.fillText(i, x, LINE_Y + 25);
                 }
             }
         }
 
-        // Move the frog visually
-        function moveFrog(number) {
-            const startX = 50; // Must match padding in drawLine
-            const targetX = startX + (number * PIXELS_PER_UNIT);
+        // --- Animation Helpers ---
+
+        // Helper: Pause for X milliseconds (makes async/await easy)
+        const sleep = (ms) => new Promise(r => setTimeout(r, ms));
+
+        // 1. Move Frog visually without animation (teleport)
+        function setFrogPos(num) {
+            const x = 50 + (num * PIXELS_PER_UNIT);
+            frog.style.left = (x - 25) + 'px';
+            frog.style.bottom = "70px";
+            frog.style.transition = "none"; // disable transition for instant set
             
-            // Center the frog horizontally on the tick
-            frog.style.left = (targetX - 25) + 'px'; // -25 to center the 40px emoji
-            
-            // Auto-scroll the container to keep frog in view
+            // Auto scroll to keep frog centered
+            const containerCenter = container.clientWidth / 2;
             container.scrollTo({
-                left: targetX - (container.clientWidth / 2),
+                left: x - containerCenter,
                 behavior: 'smooth'
             });
         }
 
-        // Draw the Jump Arc (Visualizing Addition)
-        function drawJumpArc(start, add) {
-            const startX = 50 + (start * PIXELS_PER_UNIT);
-            const endX = 50 + ((start + add) * PIXELS_PER_UNIT);
-            const centerX = (startX + endX) / 2;
-            const distance = endX - startX;
-            
-            // Height of arc depends on distance
-            const arcHeight = Math.min(distance * 0.5, 150); 
+        // 2. Animate a JUMP (Parabola)
+        async function animateJump(startNum, distance) {
+            const startX = 50 + (startNum * PIXELS_PER_UNIT);
+            const endX = 50 + ((startNum + distance) * PIXELS_PER_UNIT);
+            const midX = (startX + endX) / 2;
 
+            // Draw the Orange Arc
             ctx.beginPath();
             ctx.moveTo(startX, LINE_Y);
-            // Quadratic curve for the jump
-            ctx.quadraticCurveTo(centerX, LINE_Y - arcHeight - 50, endX, LINE_Y);
-            
-            ctx.strokeStyle = '#e67e22'; // Orange jump line
+            ctx.quadraticCurveTo(midX, LINE_Y - 150, endX, LINE_Y);
+            ctx.strokeStyle = '#ff7043'; // Orange
             ctx.lineWidth = 4;
-            ctx.setLineDash([10, 5]); // Dashed line
+            ctx.setLineDash([10, 5]);
             ctx.stroke();
-            ctx.setLineDash([]); // Reset dash
+            ctx.setLineDash([]);
 
-            // Draw arrow at landing
-            ctx.fillStyle = '#e67e22';
-            ctx.beginPath();
-            ctx.arc(endX, LINE_Y, 5, 0, Math.PI * 2);
-            ctx.fill();
+            // Animate Frog CSS
+            frog.style.transition = "left 0.6s linear, bottom 0.6s cubic-bezier(0,1.5,1,1.5)"; 
+            // The cubic-bezier creates a 'jump' effect in the bottom property
+            
+            frog.style.left = (endX - 25) + 'px';
+            
+            // Manually animate "up and down" via CSS classes or keyframes is hard dynamically
+            // So we use a little hack: set bottom up, then down halfway through
+            frog.style.bottom = "150px"; 
+            
+            await sleep(300); // Wait for peak
+            frog.style.bottom = "70px"; // Land
+            await sleep(300); // Wait for landing finish
         }
 
-        function performJump() {
+        // 3. Animate a WALK (Small Slide/Hop)
+        async function animateWalk(startNum) {
+            const startX = 50 + (startNum * PIXELS_PER_UNIT);
+            const endX = 50 + ((startNum + 1) * PIXELS_PER_UNIT);
+
+            // Draw Blue small arc
+            ctx.beginPath();
+            ctx.moveTo(startX, LINE_Y);
+            ctx.quadraticCurveTo((startX+endX)/2, LINE_Y - 30, endX, LINE_Y);
+            ctx.strokeStyle = '#00bcd4'; // Blue
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // Animate Frog
+            frog.style.transition = "left 0.3s linear, bottom 0.15s ease-out";
+            frog.style.left = (endX - 25) + 'px';
+            
+            // Hop up
+            frog.style.bottom = "90px";
+            await sleep(150);
+            // Hop down
+            frog.style.transition = "left 0.15s linear, bottom 0.15s ease-in";
+            frog.style.bottom = "70px";
+            await sleep(150);
+        }
+
+        // --- Main Logic ---
+
+        async function startAnimationSequence() {
             const start = parseInt(document.getElementById('startNum').value) || 0;
             const add = parseInt(document.getElementById('addNum').value) || 0;
-            const total = start + add;
+            
+            if(start + add > 1000) { alert("Max 1000!"); return; }
 
-            if(total > 1000) {
-                alert("Whoops! That's off the chart (Max 1000).");
-                return;
+            // 1. Calculate Tens and Ones
+            const tens = Math.floor(add / 10);
+            const ones = add % 10;
+            let current = start;
+
+            // 2. Set initial position
+            setFrogPos(current);
+            await sleep(500); // Wait a beat before starting
+
+            // 3. Perform Jumps (Tens)
+            for(let i = 0; i < tens; i++) {
+                await animateJump(current, 10);
+                current += 10;
+                // Auto scroll during animation
+                const x = 50 + (current * PIXELS_PER_UNIT);
+                container.scrollTo({ left: x - (container.clientWidth/2), behavior: 'smooth' });
+                await sleep(200); // Small pause between jumps
             }
 
-            // 1. Move to start first (instantly or quickly)
-            moveFrog(start);
-
-            // 2. Wait a moment, then animate the jump
-            setTimeout(() => {
-                // Draw the path
-                drawJumpArc(start, add);
-                
-                // Animate Frog Jump (CSS transition handles the X movement)
-                frog.style.bottom = "150px"; // Jump up!
-                moveFrog(total); // Move forward
-
-                // Land down after transition
-                setTimeout(() => {
-                    frog.style.bottom = "60px"; // Land
-                }, 500); // Half of the CSS transition time
-            }, 500);
-            
-            currentPosition = total;
+            // 4. Perform Walks (Ones)
+            for(let i = 0; i < ones; i++) {
+                await animateWalk(current);
+                current += 1;
+                 // Auto scroll during animation
+                 const x = 50 + (current * PIXELS_PER_UNIT);
+                 container.scrollTo({ left: x - (container.clientWidth/2), behavior: 'smooth' });
+            }
         }
 
         function reset() {
+            // Clear trails
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawLine();
+            drawLine(); // Redraw static line
+            
             document.getElementById('startNum').value = 0;
-            document.getElementById('addNum').value = 10;
-            moveFrog(0);
+            document.getElementById('addNum').value = 23;
+            setFrogPos(0);
         }
 
-        // Initial Setup
+        // Initialize
         drawLine();
-        moveFrog(0);
+        setFrogPos(0);
 
     </script>
 </body>
