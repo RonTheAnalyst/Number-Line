@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Frog: Partial Sums</title>
+    <title>Math Frog: Smart Dialogue</title>
     <style>
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
@@ -33,7 +33,7 @@
             background-image: 
                 linear-gradient(#eee 1px, transparent 1px),
                 linear-gradient(90deg, #eee 1px, transparent 1px);
-            background-size: 40px 40px; /* Matches grid to units */
+            background-size: 40px 40px; 
         }
 
         /* The Frog Character */
@@ -51,25 +51,27 @@
         .frog-emoji { font-size: 40px; display: inline-block; }
         .rocket-emoji { font-size: 30px; display: none; position: absolute; right: -10px; top: 0; }
 
-        /* Speech Bubble */
+        /* Speech Bubble - Made larger for better dialogue */
         .speech-bubble {
             background: #fff;
-            border: 2px solid #000;
-            border-radius: 10px;
-            padding: 8px;
+            border: 3px solid #333;
+            border-radius: 15px;
+            padding: 10px 15px;
             position: absolute;
-            bottom: 60px; 
-            left: -50px; 
-            width: 180px;
-            font-size: 14px;
+            bottom: 65px; 
+            left: -80px; /* Shifted left to center over frog */
+            width: 220px;
+            font-size: 15px;
+            line-height: 1.4;
             color: #000;
-            text-align: center;
+            text-align: left;
             display: none; 
             z-index: 20;
+            box-shadow: 2px 2px 5px rgba(0,0,0,0.2);
         }
         .speech-bubble:after {
-            content: ''; position: absolute; bottom: -10px; left: 50%;
-            margin-left: -10px; border-width: 10px 10px 0; border-style: solid; border-color: #000 transparent;
+            content: ''; position: absolute; bottom: -12px; left: 50%;
+            margin-left: 20px; border-width: 12px 12px 0; border-style: solid; border-color: #333 transparent;
         }
 
         /* Dashboard */
@@ -106,22 +108,14 @@
         .highlight-tens { color: #e65100; font-weight: 900; }     
         .highlight-ones { color: #00bcd4; font-weight: 900; }     
         
-        /* Strikethrough style */
-        .crossed { opacity: 0.5; color: #999; }
-        .crossed::after {
-            content: '';
-            position: absolute;
-            top: 50%; left: -10%; width: 120%; height: 2px;
-            background: #f44336;
-            transform: rotate(-15deg);
-        }
+        .crossed { opacity: 0.4; color: #999; text-decoration: line-through; text-decoration-color: red; text-decoration-thickness: 3px; }
 
         input { padding: 10px; font-size: 20px; width: 80px; text-align: center; border: 2px solid #b2ebf2; border-radius: 10px; }
         
         #actionBtn {
             padding: 15px 40px; font-size: 20px; background-color: #00bcd4; color: white;
             border: none; border-radius: 50px; cursor: pointer; font-weight: bold;
-            box-shadow: 0 5px 0 #00838f; margin-bottom: 10px;
+            box-shadow: 0 5px 0 #00838f; margin-bottom: 10px; min-width: 200px;
         }
         #actionBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #00838f; }
         #actionBtn:disabled { background-color: #ccc; box-shadow: none; cursor: default; }
@@ -130,11 +124,11 @@
 </head>
 <body>
 
-    <h1>🐸 Math Frog: Every Step Counts</h1>
+    <h1>🐸 Math Frog: Smart Story Mode</h1>
 
     <div class="dashboard">
         <div class="inputs">
-            <input type="number" id="startNum" value="123" min="0" max="500">
+            <input type="number" id="startNum" value="32" min="0" max="500">
             <span style="font-size: 24px;">+</span>
             <input type="number" id="addNum" value="46" min="1" max="500">
         </div>
@@ -200,28 +194,24 @@
                 const isTen = (i % 10 === 0);
                 const isHundred = (i % 100 === 0);
                 
-                // Draw Tick
                 ctx.beginPath();
                 ctx.moveTo(x, LINE_Y);
-                let tickHeight = 8; // Default small tick
+                let tickHeight = 8; 
                 if(isTen) tickHeight = 20;
                 if(isHundred) tickHeight = 35;
 
                 ctx.lineTo(x, LINE_Y - tickHeight);
-                ctx.strokeStyle = isTen ? '#37474f' : '#cfd8dc'; // Light grey for ones
+                ctx.strokeStyle = isTen ? '#37474f' : '#cfd8dc'; 
                 ctx.lineWidth = isHundred ? 3 : (isTen ? 2 : 1);
                 ctx.stroke();
 
-                // Draw Number Labels
                 if (isTen) {
-                    // Bold numbers for 10s and 100s
                     ctx.font = isHundred ? "bold 18px Arial" : "bold 14px Arial";
                     ctx.fillStyle = isHundred ? "#000" : "#37474f";
                     ctx.fillText(i, x, LINE_Y + 25);
                 } else {
-                    // Small numbers for 1s
                     ctx.font = "10px Arial";
-                    ctx.fillStyle = "#90a4ae"; // Light grey text
+                    ctx.fillStyle = "#90a4ae"; 
                     ctx.fillText(i, x, LINE_Y + 20);
                 }
             }
@@ -247,8 +237,6 @@
 
         async function animateFrog(newPos, type) {
             const x = 50 + (newPos * PIXELS_PER_UNIT);
-            
-            // Auto Scroll
             const containerCenter = container.clientWidth / 2;
             container.scrollTo({ left: x - containerCenter, behavior: 'smooth' });
 
@@ -290,24 +278,74 @@
             };
         }
 
+        // This function builds a "Smart Queue" with metadata
         function generateQueue(sVal, aVal) {
             const s = decompose(sVal);
             const a = decompose(aVal);
             const q = [];
 
-            // 1. Hundreds (Purple)
-            for(let i=0; i<s.h; i++) q.push({type:'FLY', val:100, color:'#9c27b0', id:'s-h'});
-            for(let i=0; i<a.h; i++) q.push({type:'FLY', val:100, color:'#9c27b0', id:'a-h'});
+            // Helper to push a group of steps
+            function addGroup(count, val, type, color, id, name, isStartNum) {
+                if (count <= 0) return;
+                for (let i = 1; i <= count; i++) {
+                    q.push({
+                        type: type,
+                        val: val,
+                        color: color,
+                        id: id,
+                        // Context Data
+                        groupName: name, // "hundreds", "tens", "ones"
+                        isStartNum: isStartNum, // true for first number, false for second
+                        stepNum: i,
+                        totalInGroup: count
+                    });
+                }
+            }
 
-            // 2. Tens (Orange)
-            for(let i=0; i<s.t; i++) q.push({type:'JUMP', val:10, color:'#e65100', id:'s-t'});
-            for(let i=0; i<a.t; i++) q.push({type:'JUMP', val:10, color:'#e65100', id:'a-t'});
+            // 1. Build First Number
+            addGroup(s.h, 100, 'FLY', '#9c27b0', 's-h', 'hundreds', true);
+            addGroup(s.t, 10, 'JUMP', '#e65100', 's-t', 'tens', true);
+            addGroup(s.o, 1, 'WALK', '#00bcd4', 's-o', 'ones', true);
 
-            // 3. Ones (Blue)
-            for(let i=0; i<s.o; i++) q.push({type:'WALK', val:1, color:'#00bcd4', id:'s-o'});
-            for(let i=0; i<a.o; i++) q.push({type:'WALK', val:1, color:'#00bcd4', id:'a-o'});
+            // 2. Add Second Number
+            addGroup(a.h, 100, 'FLY', '#9c27b0', 'a-h', 'hundreds', false);
+            addGroup(a.t, 10, 'JUMP', '#e65100', 'a-t', 'tens', false);
+            addGroup(a.o, 1, 'WALK', '#00bcd4', 'a-o', 'ones', false);
 
             return q;
+        }
+
+        // --- The Narrative Engine ---
+        function getSmartDialogue(step) {
+            const isFirstStep = step.stepNum === 1;
+            const remaining = step.totalInGroup - step.stepNum;
+            
+            // Scenario 1: We are building the START number (e.g., 32)
+            if (step.isStartNum) {
+                if (isFirstStep) {
+                    if (step.groupName === 'hundreds') return `First, let's reach ${step.totalInGroup}00. I need to fly ${step.totalInGroup} times!`;
+                    if (step.groupName === 'tens') return `I need to reach ${step.totalInGroup}0. Since that's ${step.totalInGroup} tens, I'll do ${step.totalInGroup} jumps!`;
+                    if (step.groupName === 'ones') return `Almost there! Just ${step.totalInGroup} small steps to finish the starting number.`;
+                } else {
+                    // Middle of Start Number
+                    if (remaining === 0) return `Last one! Then we reach the starting number.`;
+                    return `One down! ${remaining} more to go for this part.`;
+                }
+            } 
+            
+            // Scenario 2: We are ADDING the second number (e.g., +46)
+            else {
+                if (isFirstStep) {
+                    if (step.groupName === 'hundreds') return `Okay, base number done! Now let's add the ${step.totalInGroup}00. Time to fly!`;
+                    if (step.groupName === 'tens') return `Now let's add the ${step.totalInGroup}0. That means ${step.totalInGroup} big jumps.`;
+                    if (step.groupName === 'ones') return `Finally, let's add the last ${step.totalInGroup} ones.`;
+                } else {
+                    // Middle of Add Number
+                    if (remaining === 0) return `And the last ${step.groupName} jump!`;
+                    return `Nice! We have ${remaining} more ${step.groupName} left to add.`;
+                }
+            }
+            return "Let's go!";
         }
 
         function handleInteraction() {
@@ -354,11 +392,19 @@
             frogContainer.style.left = (x - 25) + 'px';
             container.scrollLeft = 0;
 
+            // Set Initial Dialogue based on the very first step in queue
             state = 'RUNNING';
             speechBubble.style.display = 'block';
-            speechBubble.innerText = "I'm starting at 0. Let's add the Hundreds first!";
-            actionBtn.innerText = "Next Step";
             
+            if(stepQueue.length > 0) {
+                // Peek at first step to set initial text
+                speechBubble.innerText = "I'm starting at 0. " + getSmartDialogue(stepQueue[0]);
+                actionBtn.innerText = "Do it!";
+            } else {
+                speechBubble.innerText = "Zero plus zero is... zero!";
+                state = 'DONE';
+            }
+
             document.getElementById('startNum').disabled = true;
             document.getElementById('addNum').disabled = true;
         }
@@ -375,17 +421,14 @@
             const step = stepQueue[currentStepIndex];
             actionBtn.disabled = true;
 
-            if(step.type === 'FLY') speechBubble.innerText = "Flying +100!";
-            if(step.type === 'JUMP') speechBubble.innerText = "Jumping +10!";
-            if(step.type === 'WALK') speechBubble.innerText = "Walking +1!";
-
+            // 1. Execute Animation
             const h = step.type === 'FLY' ? 200 : (step.type === 'JUMP' ? 140 : 40);
             drawArc(currentPos, step.val, step.color, h);
             
             await animateFrog(currentPos + step.val, step.type);
             currentPos += step.val;
 
-            // Cross Out logic
+            // 2. Handle Strikethrough
             let isLastOfGroup = true;
             for(let i = currentStepIndex + 1; i < stepQueue.length; i++) {
                 if(stepQueue[i].id === step.id) {
@@ -393,23 +436,26 @@
                     break;
                 }
             }
-
             if(isLastOfGroup) {
                 const el = document.getElementById(step.id);
                 if(el) el.classList.add('crossed');
             }
 
+            // 3. Prepare NEXT Step Dialogue
             currentStepIndex++;
             actionBtn.disabled = false;
             
             if(currentStepIndex < stepQueue.length) {
-                const nextType = stepQueue[currentStepIndex].type;
-                if(nextType !== step.type) {
-                    if(nextType === 'JUMP') speechBubble.innerText = "Done with Hundreds. Now Tens!";
-                    if(nextType === 'WALK') speechBubble.innerText = "Done with Tens. Now Ones!";
-                }
+                const nextStep = stepQueue[currentStepIndex];
+                speechBubble.innerText = getSmartDialogue(nextStep);
+                
+                // Button text update based on next action
+                if(nextStep.type === 'FLY') actionBtn.innerText = "Fly +100";
+                if(nextStep.type === 'JUMP') actionBtn.innerText = "Jump +10";
+                if(nextStep.type === 'WALK') actionBtn.innerText = "Walk +1";
+
             } else {
-                 speechBubble.innerText = "Finished! Click to see result.";
+                 speechBubble.innerText = `Hurray! We reached ${currentPos}.`;
                  actionBtn.innerText = "Finish";
             }
         }
