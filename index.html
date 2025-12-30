@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Frog: Smart Dialogue</title>
+    <title>Math Frog: Place Value Grouping</title>
     <style>
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
@@ -51,7 +51,7 @@
         .frog-emoji { font-size: 40px; display: inline-block; }
         .rocket-emoji { font-size: 30px; display: none; position: absolute; right: -10px; top: 0; }
 
-        /* Speech Bubble - Made larger for better dialogue */
+        /* Speech Bubble */
         .speech-bubble {
             background: #fff;
             border: 3px solid #333;
@@ -59,7 +59,7 @@
             padding: 10px 15px;
             position: absolute;
             bottom: 65px; 
-            left: -80px; /* Shifted left to center over frog */
+            left: -80px; 
             width: 220px;
             font-size: 15px;
             line-height: 1.4;
@@ -124,7 +124,7 @@
 </head>
 <body>
 
-    <h1>🐸 Math Frog: Smart Story Mode</h1>
+    <h1>🐸 Math Frog: Place Value Party</h1>
 
     <div class="dashboard">
         <div class="inputs">
@@ -278,7 +278,7 @@
             };
         }
 
-        // This function builds a "Smart Queue" with metadata
+        // --- NEW QUEUE GENERATION (Group by Place Value) ---
         function generateQueue(sVal, aVal) {
             const s = decompose(sVal);
             const a = decompose(aVal);
@@ -294,22 +294,26 @@
                         color: color,
                         id: id,
                         // Context Data
-                        groupName: name, // "hundreds", "tens", "ones"
-                        isStartNum: isStartNum, // true for first number, false for second
+                        groupName: name, 
+                        isStartNum: isStartNum, 
                         stepNum: i,
                         totalInGroup: count
                     });
                 }
             }
 
-            // 1. Build First Number
-            addGroup(s.h, 100, 'FLY', '#9c27b0', 's-h', 'hundreds', true);
-            addGroup(s.t, 10, 'JUMP', '#e65100', 's-t', 'tens', true);
-            addGroup(s.o, 1, 'WALK', '#00bcd4', 's-o', 'ones', true);
+            // ORDER: All Hundreds -> All Tens -> All Ones
 
-            // 2. Add Second Number
+            // 1. Hundreds (Both Numbers)
+            addGroup(s.h, 100, 'FLY', '#9c27b0', 's-h', 'hundreds', true);
             addGroup(a.h, 100, 'FLY', '#9c27b0', 'a-h', 'hundreds', false);
+
+            // 2. Tens (Both Numbers)
+            addGroup(s.t, 10, 'JUMP', '#e65100', 's-t', 'tens', true);
             addGroup(a.t, 10, 'JUMP', '#e65100', 'a-t', 'tens', false);
+
+            // 3. Ones (Both Numbers)
+            addGroup(s.o, 1, 'WALK', '#00bcd4', 's-o', 'ones', true);
             addGroup(a.o, 1, 'WALK', '#00bcd4', 'a-o', 'ones', false);
 
             return q;
@@ -319,31 +323,27 @@
         function getSmartDialogue(step) {
             const isFirstStep = step.stepNum === 1;
             const remaining = step.totalInGroup - step.stepNum;
+            const numName = step.isStartNum ? "first number" : "second number";
             
-            // Scenario 1: We are building the START number (e.g., 32)
-            if (step.isStartNum) {
-                if (isFirstStep) {
-                    if (step.groupName === 'hundreds') return `First, let's reach ${step.totalInGroup}00. I need to fly ${step.totalInGroup} times!`;
-                    if (step.groupName === 'tens') return `I need to reach ${step.totalInGroup}0. Since that's ${step.totalInGroup} tens, I'll do ${step.totalInGroup} jumps!`;
-                    if (step.groupName === 'ones') return `Almost there! Just ${step.totalInGroup} small steps to finish the starting number.`;
-                } else {
-                    // Middle of Start Number
-                    if (remaining === 0) return `Last one! Then we reach the starting number.`;
-                    return `One down! ${remaining} more to go for this part.`;
+            if (isFirstStep) {
+                // STARTING A NEW GROUP (e.g. Starting Tens for first number, or Starting Tens for second number)
+                
+                // If we are starting the FIRST number's group (e.g., 30 in 32)
+                if (step.isStartNum) {
+                    if (step.groupName === 'hundreds') return `Let's start with Hundreds! ${step.totalInGroup}00 from the first number.`;
+                    if (step.groupName === 'tens') return `Let's do Tens! Starting with ${step.totalInGroup}0 from the first number.`;
+                    if (step.groupName === 'ones') return `Now let's do Ones. ${step.totalInGroup} from the first number.`;
                 }
-            } 
-            
-            // Scenario 2: We are ADDING the second number (e.g., +46)
-            else {
-                if (isFirstStep) {
-                    if (step.groupName === 'hundreds') return `Okay, base number done! Now let's add the ${step.totalInGroup}00. Time to fly!`;
-                    if (step.groupName === 'tens') return `Now let's add the ${step.totalInGroup}0. That means ${step.totalInGroup} big jumps.`;
-                    if (step.groupName === 'ones') return `Finally, let's add the last ${step.totalInGroup} ones.`;
-                } else {
-                    // Middle of Add Number
-                    if (remaining === 0) return `And the last ${step.groupName} jump!`;
-                    return `Nice! We have ${remaining} more ${step.groupName} left to add.`;
+                // If we are adding the SECOND number's group (e.g., adding 40 from 46)
+                else {
+                    if (step.groupName === 'hundreds') return `Done with first hundreds! Now adding ${step.totalInGroup}00 from the second number.`;
+                    if (step.groupName === 'tens') return `First tens done! Now adding ${step.totalInGroup}0 from the second number.`;
+                    if (step.groupName === 'ones') return `First ones done! Now adding ${step.totalInGroup} from the second number.`;
                 }
+            } else {
+                // IN THE MIDDLE OF A GROUP
+                if (remaining === 0) return `Last one for this part!`;
+                return `One down! ${remaining} more to go.`;
             }
             return "Let's go!";
         }
@@ -392,13 +392,11 @@
             frogContainer.style.left = (x - 25) + 'px';
             container.scrollLeft = 0;
 
-            // Set Initial Dialogue based on the very first step in queue
             state = 'RUNNING';
             speechBubble.style.display = 'block';
             
             if(stepQueue.length > 0) {
-                // Peek at first step to set initial text
-                speechBubble.innerText = "I'm starting at 0. " + getSmartDialogue(stepQueue[0]);
+                speechBubble.innerText = "Starting at 0! " + getSmartDialogue(stepQueue[0]);
                 actionBtn.innerText = "Do it!";
             } else {
                 speechBubble.innerText = "Zero plus zero is... zero!";
@@ -421,14 +419,13 @@
             const step = stepQueue[currentStepIndex];
             actionBtn.disabled = true;
 
-            // 1. Execute Animation
             const h = step.type === 'FLY' ? 200 : (step.type === 'JUMP' ? 140 : 40);
             drawArc(currentPos, step.val, step.color, h);
             
             await animateFrog(currentPos + step.val, step.type);
             currentPos += step.val;
 
-            // 2. Handle Strikethrough
+            // Strikethrough logic
             let isLastOfGroup = true;
             for(let i = currentStepIndex + 1; i < stepQueue.length; i++) {
                 if(stepQueue[i].id === step.id) {
@@ -441,7 +438,7 @@
                 if(el) el.classList.add('crossed');
             }
 
-            // 3. Prepare NEXT Step Dialogue
+            // Dialogue for NEXT step
             currentStepIndex++;
             actionBtn.disabled = false;
             
@@ -449,7 +446,6 @@
                 const nextStep = stepQueue[currentStepIndex];
                 speechBubble.innerText = getSmartDialogue(nextStep);
                 
-                // Button text update based on next action
                 if(nextStep.type === 'FLY') actionBtn.innerText = "Fly +100";
                 if(nextStep.type === 'JUMP') actionBtn.innerText = "Jump +10";
                 if(nextStep.type === 'WALK') actionBtn.innerText = "Walk +1";
