@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Frog: Grouped Addition</title>
+    <title>Math Frog: Partial Sums</title>
     <style>
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
@@ -18,7 +18,7 @@
         /* Scroll Container */
         #scroll-container {
             width: 95%;
-            height: 450px; /* Taller for high flying */
+            height: 450px;
             overflow-x: auto;
             margin: 20px auto;
             border: 4px solid #00838f;
@@ -33,7 +33,7 @@
             background-image: 
                 linear-gradient(#eee 1px, transparent 1px),
                 linear-gradient(90deg, #eee 1px, transparent 1px);
-            background-size: 20px 20px;
+            background-size: 40px 40px; /* Matches grid to units */
         }
 
         /* The Frog Character */
@@ -84,7 +84,6 @@
 
         .inputs { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px; }
 
-        /* Expanded Form Box */
         .expanded-box {
             display: flex;
             flex-wrap: wrap;
@@ -103,12 +102,11 @@
         .number-group { border: 1px solid #ddd; padding: 5px 10px; border-radius: 8px; background: #fff; }
         .part { display: inline-block; padding: 0 5px; position: relative; transition: all 0.3s; }
         
-        /* Styles for active/done parts */
-        .highlight-hundreds { color: #9c27b0; font-weight: 900; } /* Purple */
-        .highlight-tens { color: #e65100; font-weight: 900; }     /* Orange */
-        .highlight-ones { color: #00bcd4; font-weight: 900; }     /* Blue */
+        .highlight-hundreds { color: #9c27b0; font-weight: 900; } 
+        .highlight-tens { color: #e65100; font-weight: 900; }     
+        .highlight-ones { color: #00bcd4; font-weight: 900; }     
         
-        /* The Red Slant Line Strikethrough */
+        /* Strikethrough style */
         .crossed { opacity: 0.5; color: #999; }
         .crossed::after {
             content: '';
@@ -132,7 +130,7 @@
 </head>
 <body>
 
-    <h1>🐸 Math Frog: Place Value Party</h1>
+    <h1>🐸 Math Frog: Every Step Counts</h1>
 
     <div class="dashboard">
         <div class="inputs">
@@ -171,15 +169,12 @@
         const expandedZone = document.getElementById('expandedZone');
 
         const PIXELS_PER_UNIT = 40; 
-        const LINE_Y = 350; // Lower line to allow high flying
+        const LINE_Y = 350; 
         let TOTAL_UNITS = 1000;
 
         // -- State Machine --
         let state = 'IDLE'; 
         let currentPos = 0;
-        
-        // We will build a "Queue" of steps. Each step object:
-        // { type: 'FLY'|'JUMP'|'WALK', val: 100|10|1, sourceId: 'start-h', desc: 'Flying 100!' }
         let stepQueue = [];
         let currentStepIndex = 0;
 
@@ -198,7 +193,6 @@
             ctx.lineWidth = 3;
             ctx.stroke();
 
-            ctx.font = "14px Arial";
             ctx.textAlign = "center";
 
             for (let i = 0; i <= TOTAL_UNITS; i++) {
@@ -206,21 +200,29 @@
                 const isTen = (i % 10 === 0);
                 const isHundred = (i % 100 === 0);
                 
+                // Draw Tick
                 ctx.beginPath();
                 ctx.moveTo(x, LINE_Y);
-                let tickHeight = 10;
+                let tickHeight = 8; // Default small tick
                 if(isTen) tickHeight = 20;
                 if(isHundred) tickHeight = 35;
 
                 ctx.lineTo(x, LINE_Y - tickHeight);
-                ctx.strokeStyle = isTen ? '#37474f' : '#b0bec5';
+                ctx.strokeStyle = isTen ? '#37474f' : '#cfd8dc'; // Light grey for ones
                 ctx.lineWidth = isHundred ? 3 : (isTen ? 2 : 1);
                 ctx.stroke();
 
+                // Draw Number Labels
                 if (isTen) {
+                    // Bold numbers for 10s and 100s
                     ctx.font = isHundred ? "bold 18px Arial" : "bold 14px Arial";
-                    ctx.fillStyle = isHundred ? "#000" : "#555";
+                    ctx.fillStyle = isHundred ? "#000" : "#37474f";
                     ctx.fillText(i, x, LINE_Y + 25);
+                } else {
+                    // Small numbers for 1s
+                    ctx.font = "10px Arial";
+                    ctx.fillStyle = "#90a4ae"; // Light grey text
+                    ctx.fillText(i, x, LINE_Y + 20);
                 }
             }
         }
@@ -254,16 +256,16 @@
                 rocket.style.display = 'block';
                 frogContainer.style.transition = "left 1.5s ease-in-out, bottom 1.5s cubic-bezier(0,1.5,1,1.5)";
                 frogContainer.style.left = (x - 25) + 'px';
-                frogContainer.style.bottom = "250px"; // Very High
+                frogContainer.style.bottom = "250px"; 
                 await sleep(1500);
-                frogContainer.style.bottom = "70px"; // Land
+                frogContainer.style.bottom = "70px"; 
                 await sleep(500);
                 rocket.style.display = 'none';
             } 
             else if (type === 'JUMP') {
                 frogContainer.style.transition = "left 1.0s linear, bottom 1.0s cubic-bezier(0,1.8,1,1.8)";
                 frogContainer.style.left = (x - 25) + 'px';
-                frogContainer.style.bottom = "140px"; // Medium High
+                frogContainer.style.bottom = "140px";
                 await sleep(1000);
                 frogContainer.style.bottom = "70px";
             } 
@@ -324,11 +326,10 @@
 
             if (sVal + aVal > 1000) { alert("Total cannot exceed 1000!"); return; }
 
-            // 1. Setup Data
             const s = decompose(sVal);
             const a = decompose(aVal);
             
-            // 2. Render Expanded Form HTML
+            // Render Expanded Form
             let html = `<div class="number-group">`;
             if(s.h) html += `<span id="s-h" class="part highlight-hundreds">${s.h}00</span> + `;
             if(s.t) html += `<span id="s-t" class="part highlight-tens">${s.t}0</span> + `;
@@ -343,31 +344,27 @@
 
             expandedZone.innerHTML = html;
 
-            // 3. Build Queue
             stepQueue = generateQueue(sVal, aVal);
             currentStepIndex = 0;
             currentPos = 0;
             
-            // 4. Move Frog to 0
+            // Reset Frog Position to 0
             frogContainer.style.transition = 'none';
             const x = 50 + (0 * PIXELS_PER_UNIT);
             frogContainer.style.left = (x - 25) + 'px';
             container.scrollLeft = 0;
 
-            // 5. Start
             state = 'RUNNING';
             speechBubble.style.display = 'block';
             speechBubble.innerText = "I'm starting at 0. Let's add the Hundreds first!";
             actionBtn.innerText = "Next Step";
             
-            // Disable inputs
             document.getElementById('startNum').disabled = true;
             document.getElementById('addNum').disabled = true;
         }
 
         async function processNextStep() {
             if (currentStepIndex >= stepQueue.length) {
-                // All done
                 speechBubble.innerText = `We made it! The answer is ${currentPos}.`;
                 actionBtn.innerText = "Reset";
                 actionBtn.style.backgroundColor = "#4caf50";
@@ -375,26 +372,20 @@
                 return;
             }
 
-            // Get current action
             const step = stepQueue[currentStepIndex];
-            actionBtn.disabled = true; // Prevent spam clicking
+            actionBtn.disabled = true;
 
-            // 1. Update Speech based on type
             if(step.type === 'FLY') speechBubble.innerText = "Flying +100!";
             if(step.type === 'JUMP') speechBubble.innerText = "Jumping +10!";
             if(step.type === 'WALK') speechBubble.innerText = "Walking +1!";
 
-            // 2. Draw Arc & Animate Frog
-            // Height logic: Fly=200, Jump=140, Walk=40
             const h = step.type === 'FLY' ? 200 : (step.type === 'JUMP' ? 140 : 40);
             drawArc(currentPos, step.val, step.color, h);
             
             await animateFrog(currentPos + step.val, step.type);
             currentPos += step.val;
 
-            // 3. Logic to "Cross Out" the number part
-            // We check if this is the LAST step for this specific part ID
-            // Look ahead in queue to see if same ID exists
+            // Cross Out logic
             let isLastOfGroup = true;
             for(let i = currentStepIndex + 1; i < stepQueue.length; i++) {
                 if(stepQueue[i].id === step.id) {
@@ -408,11 +399,9 @@
                 if(el) el.classList.add('crossed');
             }
 
-            // 4. Prepare for next
             currentStepIndex++;
             actionBtn.disabled = false;
             
-            // Check if next step type changes for speech bubble hint
             if(currentStepIndex < stepQueue.length) {
                 const nextType = stepQueue[currentStepIndex].type;
                 if(nextType !== step.type) {
@@ -440,11 +429,10 @@
             
             state = 'IDLE';
             frogContainer.style.transition = 'none';
-            frogContainer.style.left = '25px'; // Back to 0
+            frogContainer.style.left = '25px'; 
             container.scrollLeft = 0;
         }
 
-        // Init
         drawLine();
     </script>
 </body>
