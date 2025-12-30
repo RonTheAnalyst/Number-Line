@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Frog: Place Value Grouping</title>
+    <title>Math Frog: Smart Dialogue Fixed</title>
     <style>
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
@@ -278,7 +278,7 @@
             };
         }
 
-        // --- NEW QUEUE GENERATION (Group by Place Value) ---
+        // --- QUEUE GENERATION (Group by Place Value) ---
         function generateQueue(sVal, aVal) {
             const s = decompose(sVal);
             const a = decompose(aVal);
@@ -304,37 +304,38 @@
 
             // ORDER: All Hundreds -> All Tens -> All Ones
 
-            // 1. Hundreds (Both Numbers)
+            // 1. Hundreds
             addGroup(s.h, 100, 'FLY', '#9c27b0', 's-h', 'hundreds', true);
             addGroup(a.h, 100, 'FLY', '#9c27b0', 'a-h', 'hundreds', false);
 
-            // 2. Tens (Both Numbers)
+            // 2. Tens
             addGroup(s.t, 10, 'JUMP', '#e65100', 's-t', 'tens', true);
             addGroup(a.t, 10, 'JUMP', '#e65100', 'a-t', 'tens', false);
 
-            // 3. Ones (Both Numbers)
+            // 3. Ones
             addGroup(s.o, 1, 'WALK', '#00bcd4', 's-o', 'ones', true);
             addGroup(a.o, 1, 'WALK', '#00bcd4', 'a-o', 'ones', false);
 
             return q;
         }
 
-        // --- The Narrative Engine ---
+        // --- Narrative Engine (Fixed Math) ---
         function getSmartDialogue(step) {
             const isFirstStep = step.stepNum === 1;
-            const remaining = step.totalInGroup - step.stepNum;
-            const numName = step.isStartNum ? "first number" : "second number";
             
+            // Calculate strictly how many are left AFTER this step finishes.
+            // But for the dialogue "X to go", we usually mean "including this one or remaining ones".
+            // Let's make it simple: "We have X steps left in this part."
+            const stepsLeftToClick = step.totalInGroup - (step.stepNum - 1);
+            const stepsDone = step.stepNum - 1;
+
             if (isFirstStep) {
-                // STARTING A NEW GROUP (e.g. Starting Tens for first number, or Starting Tens for second number)
-                
-                // If we are starting the FIRST number's group (e.g., 30 in 32)
+                // STARTING A NEW GROUP
                 if (step.isStartNum) {
                     if (step.groupName === 'hundreds') return `Let's start with Hundreds! ${step.totalInGroup}00 from the first number.`;
                     if (step.groupName === 'tens') return `Let's do Tens! Starting with ${step.totalInGroup}0 from the first number.`;
                     if (step.groupName === 'ones') return `Now let's do Ones. ${step.totalInGroup} from the first number.`;
                 }
-                // If we are adding the SECOND number's group (e.g., adding 40 from 46)
                 else {
                     if (step.groupName === 'hundreds') return `Done with first hundreds! Now adding ${step.totalInGroup}00 from the second number.`;
                     if (step.groupName === 'tens') return `First tens done! Now adding ${step.totalInGroup}0 from the second number.`;
@@ -342,8 +343,9 @@
                 }
             } else {
                 // IN THE MIDDLE OF A GROUP
-                if (remaining === 0) return `Last one for this part!`;
-                return `One down! ${remaining} more to go.`;
+                // Example: 40. Step 2. Done 1. Left to Click: 3.
+                if (stepsLeftToClick === 1) return `Last one for this part!`;
+                return `${stepsDone} down! ${stepsLeftToClick} to go.`;
             }
             return "Let's go!";
         }
