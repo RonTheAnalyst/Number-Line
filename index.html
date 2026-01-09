@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Frog: Ultimate Edition</title>
+    <title>Math Frog: Ultimate Edition (Stable)</title>
     <style>
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
@@ -11,7 +11,6 @@
             text-align: center;
             margin: 0;
             padding: 20px;
-            overflow-y: hidden;
         }
 
         /* --- UI: Top Bar --- */
@@ -56,12 +55,13 @@
         /* Dynamic Input Rows */
         #inputContainer {
             display: flex;
-            flex-direction: column; /* Stack vertically */
+            flex-direction: column; 
             align-items: center;
             gap: 10px;
             margin-bottom: 15px;
-            max-height: 200px;
+            max-height: 250px;
             overflow-y: auto;
+            padding: 5px;
         }
 
         .input-row {
@@ -128,10 +128,7 @@
             display: block; 
         }
 
-        .canvas-layer { position: absolute; top: 0; left: 0; display: block; }
-        
-        #numberLine { z-index: 1; }
-        #drawLayer { z-index: 3; pointer-events: none; }
+        canvas { display: block; }
 
         /* Frog & Rocket */
         .character-container {
@@ -162,29 +159,9 @@
             margin-left: 20px; border-width: 12px 12px 0; border-style: solid; border-color: #333 transparent;
         }
 
-        /* --- ANNOTATE TOOLBAR --- */
-        .drawing-tools {
-            position: fixed; top: 20px; right: 20px; background: white; padding: 10px;
-            border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.2); z-index: 100;
-            display: flex; flex-direction: column; gap: 10px; border: 2px solid #333;
-        }
-        
-        .tool-btn { background: #f0f0f0; border: 1px solid #ccc; padding: 8px; border-radius: 5px; cursor: pointer; text-align: center; }
-        .tool-btn.active { background: #ffeb3b; border-color: #fbc02d; font-weight: bold; }
-        .color-picker { width: 40px; height: 30px; border: none; padding: 0; cursor: pointer; }
-
     </style>
 </head>
 <body>
-
-    <div class="drawing-tools">
-        <span style="font-size: 12px; font-weight:bold;">Teacher Tools</span>
-        <button class="tool-btn active" id="btnCursor" onclick="setTool('cursor')">👆 Scroll</button>
-        <button class="tool-btn" id="btnPen" onclick="setTool('pen')">✏️ Pen</button>
-        <input type="color" id="penColor" class="color-picker" value="#ff0000">
-        <button class="tool-btn" id="btnEraser" onclick="setTool('eraser')">🧼 Eraser</button>
-        <button class="tool-btn" onclick="clearDrawing()">🗑️ Clear</button>
-    </div>
 
     <div class="top-bar">
         <h1>🐸 Math Frog</h1>
@@ -212,13 +189,12 @@
     </div>
 
     <div id="scroll-container">
-        <canvas id="numberLine" class="canvas-layer"></canvas>
+        <canvas id="numberLine"></canvas>
         <div id="frogContainer" class="character-container">
             <div id="speech" class="speech-bubble">Hello!</div>
             <div id="frogImg" class="frog-emoji">🐸</div>
             <div id="rocket" class="rocket-emoji">🚀</div>
         </div>
-        <canvas id="drawLayer" class="canvas-layer"></canvas>
     </div>
 
     <script>
@@ -232,10 +208,8 @@
 
         // --- DOM ELEMENTS ---
         const container = document.getElementById('scroll-container');
-        const gameCanvas = document.getElementById('numberLine');
-        const drawCanvas = document.getElementById('drawLayer');
-        const ctx = gameCanvas.getContext('2d');
-        const drawCtx = drawCanvas.getContext('2d');
+        const canvas = document.getElementById('numberLine');
+        const ctx = canvas.getContext('2d');
         const frogContainer = document.getElementById('frogContainer');
         const frogImg = document.getElementById('frogImg');
         const rocket = document.getElementById('rocket');
@@ -262,18 +236,12 @@
             
             let html = '';
             
-            // First row is special (no operator choice, just start number)
+            // First row (Start Number)
             if (inputCount === 0) {
                 html = `<span style="font-weight:bold;">Start:</span>
                         <input type="number" id="num-${inputCount}" value="${val}">`;
-                
-                // Add "Add Number" button to first row context or just generally append at bottom
             } else {
-                // Subsequent rows have Operator + Number
-                // For Standard/Advanced, allow + only? No, user requested flexible inputs.
-                // But for Standard, usually + is default. 
-                // We will allow +/- for everyone, but Standard assumes + usually.
-                
+                // Subsequent rows (Operator + Number)
                 html = `<select id="op-${inputCount}" class="operator-select">
                             <option value="+" ${op==='+'?'selected':''}>+</option>
                             <option value="-" ${op==='-'?'selected':''}>-</option>
@@ -285,13 +253,11 @@
             div.innerHTML = html;
             inputContainer.appendChild(div);
             
-            // Add "Add Another" button at the very bottom
             refreshAddButton();
             inputCount++;
         }
 
         function refreshAddButton() {
-            // Remove existing add button if any
             const existing = document.getElementById('btnAddRow');
             if(existing) existing.remove();
 
@@ -321,59 +287,17 @@
                 addInputRow(460, '+');
             } else if (key === 'NEGATIVE') {
                 addInputRow(-10);
-                addInputRow(25, '+'); // Adding 25
-                addInputRow(5, '-');  // Subtracting 5
+                addInputRow(25, '+'); 
+                addInputRow(5, '-'); 
             }
         }
 
         function changeMode() {
             const modeKey = document.getElementById('modeSelect').value;
             currentMode = MODES[modeKey];
-            reset(); // Clear canvas
+            reset(); 
             rebuildInputsForMode();
         }
-
-        // --- DRAWING SYSTEM ---
-        let drawingTool = 'cursor'; 
-        let isDrawing = false;
-        let lastX = 0, lastY = 0;
-
-        function setTool(tool) {
-            drawingTool = tool;
-            document.getElementById('btnCursor').className = tool === 'cursor' ? 'tool-btn active' : 'tool-btn';
-            document.getElementById('btnPen').className = tool === 'pen' ? 'tool-btn active' : 'tool-btn';
-            document.getElementById('btnEraser').className = tool === 'eraser' ? 'tool-btn active' : 'tool-btn';
-            
-            if (tool === 'cursor') {
-                drawCanvas.style.pointerEvents = 'none'; 
-                container.style.overflowX = 'auto'; 
-            } else {
-                drawCanvas.style.pointerEvents = 'auto'; 
-                container.style.overflowX = 'hidden'; 
-            }
-        }
-
-        function clearDrawing() { drawCtx.clearRect(0, 0, drawCanvas.width, drawCanvas.height); }
-
-        function getPos(e) {
-            const rect = drawCanvas.getBoundingClientRect();
-            const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-            const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-            return { x: clientX - rect.left, y: clientY - rect.top };
-        }
-
-        drawCanvas.addEventListener('mousedown', e => { if(drawingTool!=='cursor'){ isDrawing=true; const p=getPos(e); lastX=p.x; lastY=p.y; } });
-        drawCanvas.addEventListener('mousemove', e => {
-            if(!isDrawing || drawingTool==='cursor') return;
-            e.preventDefault(); const p=getPos(e);
-            drawCtx.beginPath(); drawCtx.moveTo(lastX, lastY); drawCtx.lineTo(p.x, p.y);
-            drawCtx.lineCap = 'round'; drawCtx.lineJoin = 'round';
-            if(drawingTool==='pen') { drawCtx.globalCompositeOperation='source-over'; drawCtx.strokeStyle=document.getElementById('penColor').value; drawCtx.lineWidth=3; }
-            else { drawCtx.globalCompositeOperation='destination-out'; drawCtx.lineWidth=20; }
-            drawCtx.stroke(); lastX=p.x; lastY=p.y;
-        });
-        drawCanvas.addEventListener('mouseup', () => isDrawing=false);
-        drawCanvas.addEventListener('mouseout', () => isDrawing=false);
 
         // --- GAME LOGIC ---
 
@@ -391,11 +315,11 @@
             
             const totalWidth = (range * PIXELS_PER_UNIT) + 100;
             
-            gameCanvas.width = totalWidth; gameCanvas.height = 450;
-            drawCanvas.width = totalWidth; drawCanvas.height = 450;
+            canvas.width = totalWidth; 
+            canvas.height = 450;
 
-            ctx.clearRect(0,0, gameCanvas.width, gameCanvas.height);
-            ctx.beginPath(); ctx.moveTo(0, LINE_Y); ctx.lineTo(gameCanvas.width, LINE_Y);
+            ctx.clearRect(0,0, canvas.width, canvas.height);
+            ctx.beginPath(); ctx.moveTo(0, LINE_Y); ctx.lineTo(canvas.width, LINE_Y);
             ctx.strokeStyle = '#455a64'; ctx.lineWidth = 3; ctx.stroke(); ctx.textAlign = "center";
 
             for (let i = 0; i <= range; i++) {
@@ -439,24 +363,22 @@
             ctx.stroke();
             ctx.setLineDash([]);
             
-            // Draw Arrow
-            const angle = Math.atan2(LINE_Y - (LINE_Y - height), endX - midX); // approx
-            // Simple dot for now
+            // Draw Arrow head
             ctx.beginPath(); ctx.arc(endX, LINE_Y, 4, 0, Math.PI*2); ctx.fillStyle = color; ctx.fill();
         }
 
         // -- Animation --
         const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-        async function animateFrog(newPos, type, direction) {
+        async function animateFrog(newPos, type, distVal) {
             const x = getX(newPos);
             const containerCenter = container.clientWidth / 2;
             
-            // Face the direction
-            if (direction < 0) frogImg.className = "frog-emoji face-left";
+            // Face the direction of jump (negative distance = look left)
+            if (distVal < 0) frogImg.className = "frog-emoji face-left";
             else frogImg.className = "frog-emoji";
 
-            if(drawingTool === 'cursor') container.scrollTo({ left: x - containerCenter, behavior: 'smooth' });
+            container.scrollTo({ left: x - containerCenter, behavior: 'smooth' });
 
             if (type === 'FLY') {
                 rocket.style.display = 'block';
@@ -486,7 +408,6 @@
 
         // -- Decomposition & Queue --
         function decompose(num, multiplier) {
-            // Treat everything as positive magnitudes for grouping, but track the sign
             const val = num / multiplier;
             const sign = val < 0 ? -1 : 1;
             const absVal = Math.abs(val);
@@ -503,22 +424,18 @@
             const m = currentMode.multiplier;
             const q = [];
             
-            // Input structure: [{val: 10}, {val: -5}, {val: 20}]
-            // We iterate inputs. For each input, we decompose and push steps.
-            
             inputs.forEach((input, index) => {
                 const parts = decompose(input.val, m);
                 const isStart = (index === 0);
-                const sign = parts.sign; // 1 or -1
+                const sign = parts.sign; 
                 
-                // Helper
                 function addGroup(count, unitVal, type, color, label) {
                     if (count <= 0) return;
                     const realVal = unitVal * m * sign; // Apply sign here!
                     for(let i=1; i<=count; i++) {
                         q.push({
                             type: type, val: realVal, color: color,
-                            id: `p-${index}-${label}`, // Unique ID for strikethrough
+                            id: `p-${index}-${label}`, 
                             groupName: label, isStartNum: isStart, stepNum: i, totalInGroup: count,
                             inputIndex: index
                         });
@@ -530,7 +447,6 @@
                 addGroup(parts.t, 10, 'JUMP', currentMode.colors[1], 'Tens');
                 addGroup(parts.o, 1, 'WALK', currentMode.colors[0], 'Ones');
             });
-            
             return q;
         }
 
@@ -548,27 +464,20 @@
         }
 
         // -- MAIN LOOP --
-        
         function gatherInputs() {
-            // Read the DOM to build the input array
             const inputs = [];
-            
-            // Row 0 (Start)
             const row0 = document.getElementById(`num-0`);
             if(!row0) return [];
             inputs.push({ val: parseInt(row0.value) || 0 });
 
-            // Subsequent rows
             const rows = document.getElementById('inputContainer').children;
             for(let i=0; i<rows.length; i++) {
-                if(rows[i].id === 'btnAddRow') continue; // Skip button
+                if(rows[i].id === 'btnAddRow') continue; 
                 const id = rows[i].id.split('-')[1];
-                if(id === '0') continue; // Handled
+                if(id === '0') continue; 
 
                 const op = document.getElementById(`op-${id}`).value;
                 const num = parseInt(document.getElementById(`num-${id}`).value) || 0;
-                
-                // If op is -, invert number
                 inputs.push({ val: op === '-' ? -num : num });
             }
             return inputs;
@@ -576,24 +485,18 @@
 
         function initialize() {
             const inputs = gatherInputs();
-            
-            // Render Expanded Form
             let html = '';
             let total = 0;
             const m = currentMode.multiplier;
 
             inputs.forEach((inp, idx) => {
                 const parts = decompose(inp.val, m);
-                const signStr = inp.val < 0 ? '-' : (idx===0 ? '' : '+');
-                const signMult = inp.val < 0 ? -1 : 1;
-                
-                html += `<div class="number-group">`;
-                if(idx > 0) html += `<span style="font-size:20px; margin-right:5px;">${inp.val < 0 ? '-' : '+'}</span>`;
-                
-                // Show parts absolute value, sign handled by operator above or context
                 const absH = parts.h * 100 * m;
                 const absT = parts.t * 10 * m;
                 const absO = parts.o * 1 * m;
+                
+                html += `<div class="number-group">`;
+                if(idx > 0) html += `<span style="font-size:20px; margin-right:5px;">${inp.val < 0 ? '-' : '+'}</span>`;
                 
                 if(parts.h) html += `<span id="p-${idx}-Hundreds" class="part highlight-hundreds">${absH}</span>`;
                 if(parts.h && (parts.t || parts.o)) html += `+`;
@@ -601,7 +504,6 @@
                 if(parts.t && parts.o) html += `+`;
                 if(parts.o) html += `<span id="p-${idx}-Ones" class="part highlight-ones">${absO}</span>`;
                 
-                // Handle pure zero
                 if(!parts.h && !parts.t && !parts.o) html += `<span>0</span>`;
                 
                 html += `</div>`;
@@ -617,10 +519,7 @@
 
             stepQueue = generateQueue(inputs);
             currentStepIndex = 0;
-            currentPos = 0; // Or inputs[0].val? No, standard is usually build from 0.
-            
-            // But wait, if we are doing 32 + 10. Does frog start at 32? 
-            // My previous logic built 32 from 0. Let's keep that, it's more educational.
+            currentPos = 0; 
             
             frogContainer.style.transition = 'none';
             frogContainer.style.left = (getX(0) - 25) + 'px';
@@ -637,7 +536,6 @@
                 state = 'DONE';
             }
             
-            // Disable inputs
             const inputsFields = document.querySelectorAll('input, select, button.remove-btn, button.add-row-btn');
             inputsFields.forEach(el => el.disabled = true);
         }
@@ -663,10 +561,9 @@
             const h = step.type === 'FLY' ? 200 : (step.type === 'JUMP' ? 140 : 40);
             drawArc(currentPos, step.val, step.color, h);
             
-            await animateFrog(currentPos + step.val, step.type, step.val); // Pass val for direction
+            await animateFrog(currentPos + step.val, step.type, step.val); 
             currentPos += step.val;
 
-            // Strikethrough logic
             let isLastOfGroup = true;
             for(let i = currentStepIndex + 1; i < stepQueue.length; i++) {
                 if(stepQueue[i].id === step.id) { isLastOfGroup = false; break; }
@@ -694,15 +591,14 @@
         }
 
         function reset() {
-            ctx.clearRect(0,0, gameCanvas.width, gameCanvas.height);
+            ctx.clearRect(0,0, canvas.width, canvas.height);
             drawLine();
             frogContainer.style.transition = 'none';
             const startX = getX(0);
             frogContainer.style.left = (startX - 25) + 'px';
             container.scrollLeft = startX - (container.clientWidth/2);
-            frogImg.className = "frog-emoji"; // Reset face direction
+            frogImg.className = "frog-emoji";
 
-            // Enable inputs
             const inputsFields = document.querySelectorAll('input, select, button.remove-btn, button.add-row-btn');
             inputsFields.forEach(el => el.disabled = false);
             
@@ -712,12 +608,11 @@
             actionBtn.innerText = "Start";
             actionBtn.style.backgroundColor = "#00bcd4";
             state = 'IDLE';
-            setTool('cursor');
         }
 
         // Init
         rebuildInputsForMode();
-        setTimeout(drawLine, 100); // Ensure layout is ready
+        setTimeout(drawLine, 100); 
         window.addEventListener('resize', drawLine);
 
     </script>
