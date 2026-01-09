@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Frog: Smart Dialogue Fixed</title>
+    <title>Math Frog: Multi-Mode</title>
     <style>
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
@@ -13,7 +13,34 @@
             padding: 20px;
         }
 
-        h1 { color: #006064; margin-bottom: 5px; }
+        /* Top Bar */
+        .top-bar {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            margin-bottom: 20px;
+            background: #fff;
+            padding: 15px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        select {
+            padding: 10px;
+            font-size: 18px;
+            border-radius: 10px;
+            border: 2px solid #00838f;
+            background: #e0f7fa;
+            cursor: pointer;
+            font-weight: bold;
+            color: #006064;
+        }
+
+        h1 { color: #006064; margin: 0; font-size: 24px; }
 
         /* Scroll Container */
         #scroll-container {
@@ -36,11 +63,11 @@
             background-size: 40px 40px; 
         }
 
-        /* The Frog Character */
+        /* Frog & Rocket */
         .character-container {
             position: absolute;
             bottom: 70px;
-            left: 25px; 
+            left: 0; 
             transition: left 1.0s ease-in-out, bottom 1.0s ease-in-out;
             z-index: 10;
             width: 60px;
@@ -74,7 +101,7 @@
             margin-left: 20px; border-width: 12px 12px 0; border-style: solid; border-color: #333 transparent;
         }
 
-        /* Dashboard */
+        /* Controls */
         .dashboard {
             background: #ffffff;
             padding: 20px;
@@ -104,13 +131,14 @@
         .number-group { border: 1px solid #ddd; padding: 5px 10px; border-radius: 8px; background: #fff; }
         .part { display: inline-block; padding: 0 5px; position: relative; transition: all 0.3s; }
         
+        /* Highlight colors */
         .highlight-hundreds { color: #9c27b0; font-weight: 900; } 
         .highlight-tens { color: #e65100; font-weight: 900; }     
         .highlight-ones { color: #00bcd4; font-weight: 900; }     
         
         .crossed { opacity: 0.4; color: #999; text-decoration: line-through; text-decoration-color: red; text-decoration-thickness: 3px; }
 
-        input { padding: 10px; font-size: 20px; width: 80px; text-align: center; border: 2px solid #b2ebf2; border-radius: 10px; }
+        input { padding: 10px; font-size: 20px; width: 100px; text-align: center; border: 2px solid #b2ebf2; border-radius: 10px; }
         
         #actionBtn {
             padding: 15px 40px; font-size: 20px; background-color: #00bcd4; color: white;
@@ -119,22 +147,28 @@
         }
         #actionBtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #00838f; }
         #actionBtn:disabled { background-color: #ccc; box-shadow: none; cursor: default; }
-
     </style>
 </head>
 <body>
 
-    <h1>🐸 Math Frog: Place Value Party</h1>
+    <div class="top-bar">
+        <h1>🐸 Math Frog</h1>
+        <select id="modeSelect" onchange="changeMode()">
+            <option value="STANDARD">Standard (0 to 1000)</option>
+            <option value="ADVANCED">Advanced (0 to 10,000)</option>
+            <option value="NEGATIVE">Negative (-500 to 500)</option>
+        </select>
+    </div>
 
     <div class="dashboard">
         <div class="inputs">
-            <input type="number" id="startNum" value="32" min="0" max="500">
+            <input type="number" id="startNum" value="32">
             <span style="font-size: 24px;">+</span>
-            <input type="number" id="addNum" value="46" min="1" max="500">
+            <input type="number" id="addNum" value="46">
         </div>
 
         <div id="expandedZone" class="expanded-box">
-            <span>Enter numbers and click Start!</span>
+            <span>Select a mode and click Start!</span>
         </div>
 
         <button id="actionBtn" onclick="handleInteraction()">Start</button>
@@ -152,6 +186,27 @@
     </div>
 
     <script>
+        // -- CONFIGURATION FOR MODES --
+        const MODES = {
+            STANDARD: {
+                min: 0, max: 1000, multiplier: 1, 
+                colors: ['#00bcd4', '#e65100', '#9c27b0'], // Ones, Tens, Hundreds
+                labels: ['Ones', 'Tens', 'Hundreds']
+            },
+            ADVANCED: {
+                min: 0, max: 10000, multiplier: 10, // Inputs are scaled (1 walk = 10)
+                colors: ['#009688', '#ff9800', '#673ab7'], // Tens, Hundreds, Thousands
+                labels: ['Tens', 'Hundreds', 'Thousands']
+            },
+            NEGATIVE: {
+                min: -500, max: 500, multiplier: 1,
+                colors: ['#00bcd4', '#e65100', '#9c27b0'],
+                labels: ['Ones', 'Tens', 'Hundreds']
+            }
+        };
+
+        let currentMode = MODES.STANDARD;
+
         // -- Setup --
         const container = document.getElementById('scroll-container');
         const canvas = document.getElementById('numberLine');
@@ -164,19 +219,66 @@
 
         const PIXELS_PER_UNIT = 40; 
         const LINE_Y = 350; 
-        let TOTAL_UNITS = 1000;
-
-        // -- State Machine --
+        
         let state = 'IDLE'; 
         let currentPos = 0;
         let stepQueue = [];
         let currentStepIndex = 0;
 
-        canvas.width = (TOTAL_UNITS * PIXELS_PER_UNIT) + 100;
-        canvas.height = 450;
+        // -- Helper: Coordinate Mapping --
+        // Converts a number line value to X pixel position
+        function getX(val) {
+            // How far is this value from the minimum?
+            // e.g. in Negative mode: Value -20. Min -500. Distance = 480.
+            // In Advanced mode: scale is different, but visual ticks are compressed 
+            
+            let visualUnit = val;
+            if (currentMode === MODES.ADVANCED) {
+                // In advanced mode, we map 0-10000 to same physical space as 0-1000
+                // So every visual unit represents 10 actual units
+                visualUnit = val / 10;
+            }
+
+            const offsetFromMin = visualUnit - (currentMode.min === 0 ? 0 : currentMode.min);
+            return 50 + (offsetFromMin * PIXELS_PER_UNIT);
+        }
+
+        function changeMode() {
+            const modeKey = document.getElementById('modeSelect').value;
+            currentMode = MODES[modeKey];
+            
+            // Set default values based on mode
+            const startIn = document.getElementById('startNum');
+            const addIn = document.getElementById('addNum');
+
+            if(modeKey === 'STANDARD') {
+                startIn.value = 32; addIn.value = 46;
+                startIn.min = 0; startIn.max = 999;
+            } else if(modeKey === 'ADVANCED') {
+                startIn.value = 320; addIn.value = 460;
+                startIn.step = 10; // Encourage multiples of 10
+                startIn.min = 0; startIn.max = 9990;
+            } else if(modeKey === 'NEGATIVE') {
+                startIn.value = -20; addIn.value = 50;
+                startIn.min = -500; startIn.max = 500;
+            }
+            
+            reset();
+        }
 
         // -- Graphics --
         function drawLine() {
+            // Determine canvas width based on range
+            let range = 0;
+            if(currentMode === MODES.ADVANCED) {
+                range = (currentMode.max - currentMode.min) / 10; // Compress
+            } else {
+                range = currentMode.max - currentMode.min;
+            }
+            
+            canvas.width = (range * PIXELS_PER_UNIT) + 100;
+            canvas.height = 450;
+
             ctx.clearRect(0,0, canvas.width, canvas.height);
             
             // Main Line
@@ -189,37 +291,48 @@
 
             ctx.textAlign = "center";
 
-            for (let i = 0; i <= TOTAL_UNITS; i++) {
+            // Draw Ticks
+            // We iterate through VISUAL units
+            for (let i = 0; i <= range; i++) {
+                // Calculate Actual Number Value
+                let actualNum = 0;
+                if(currentMode === MODES.ADVANCED) actualNum = (i * 10);
+                else actualNum = currentMode.min + i;
+
                 const x = 50 + (i * PIXELS_PER_UNIT);
-                const isTen = (i % 10 === 0);
-                const isHundred = (i % 100 === 0);
                 
+                const isTen = (actualNum % 10 === 0);
+                const isHundred = (actualNum % 100 === 0);
+                const isZero = (actualNum === 0);
+
                 ctx.beginPath();
                 ctx.moveTo(x, LINE_Y);
                 let tickHeight = 8; 
-                if(isTen) tickHeight = 20;
-                if(isHundred) tickHeight = 35;
+                if(isTen) tickHeight = 15;
+                if(isHundred || isZero) tickHeight = 35;
 
                 ctx.lineTo(x, LINE_Y - tickHeight);
-                ctx.strokeStyle = isTen ? '#37474f' : '#cfd8dc'; 
-                ctx.lineWidth = isHundred ? 3 : (isTen ? 2 : 1);
+                ctx.strokeStyle = (isTen || isZero) ? '#37474f' : '#cfd8dc'; 
+                ctx.lineWidth = (isHundred || isZero) ? 3 : (isTen ? 2 : 1);
                 ctx.stroke();
 
-                if (isTen) {
-                    ctx.font = isHundred ? "bold 18px Arial" : "bold 14px Arial";
-                    ctx.fillStyle = isHundred ? "#000" : "#37474f";
-                    ctx.fillText(i, x, LINE_Y + 25);
-                } else {
+                // Labels
+                if (isTen || isZero) {
+                    ctx.font = (isHundred || isZero) ? "bold 16px Arial" : "bold 12px Arial";
+                    ctx.fillStyle = (isHundred || isZero) ? "#000" : "#555";
+                    ctx.fillText(actualNum, x, LINE_Y + 25);
+                } else if (PIXELS_PER_UNIT > 20) {
+                    // Only show small numbers if zoom allows
                     ctx.font = "10px Arial";
-                    ctx.fillStyle = "#90a4ae"; 
-                    ctx.fillText(i, x, LINE_Y + 20);
+                    ctx.fillStyle = "#b0bec5"; 
+                    ctx.fillText(actualNum, x, LINE_Y + 20);
                 }
             }
         }
 
         function drawArc(start, dist, color, height) {
-            const startX = 50 + (start * PIXELS_PER_UNIT);
-            const endX = 50 + ((start + dist) * PIXELS_PER_UNIT);
+            const startX = getX(start);
+            const endX = getX(start + dist);
             const midX = (startX + endX) / 2;
 
             ctx.beginPath();
@@ -227,7 +340,7 @@
             ctx.quadraticCurveTo(midX, LINE_Y - height, endX, LINE_Y);
             ctx.strokeStyle = color;
             ctx.lineWidth = 3;
-            if(dist >= 10) ctx.setLineDash([10, 5]); 
+            if(Math.abs(dist) >= (10 * currentMode.multiplier)) ctx.setLineDash([10, 5]); 
             ctx.stroke();
             ctx.setLineDash([]);
         }
@@ -236,7 +349,7 @@
         const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
         async function animateFrog(newPos, type) {
-            const x = 50 + (newPos * PIXELS_PER_UNIT);
+            const x = getX(newPos);
             const containerCenter = container.clientWidth / 2;
             container.scrollTo({ left: x - containerCenter, behavior: 'smooth' });
 
@@ -270,30 +383,40 @@
 
         // -- Logic --
 
-        function decompose(num) {
+        function decompose(num, multiplier) {
+            // If Multiplier is 10 (Advanced), a "320" input becomes:
+            // 300 (Fly), 20 (Jump), 0 (Walk) -- Wait, no.
+            // Advanced Mode: 1 Walk = 10 units. 1 Jump = 100 units. 1 Fly = 1000 units.
+            
+            // Normalize the number to the base units
+            const base = num / multiplier; // e.g., 320 / 10 = 32.
+            
+            // Now decompose 32 like normal
             return {
-                h: Math.floor(num / 100),
-                t: Math.floor((num % 100) / 10),
-                o: num % 10
+                h: Math.floor(Math.abs(base) / 100),
+                t: Math.floor((Math.abs(base) % 100) / 10),
+                o: Math.floor(Math.abs(base) % 10),
+                sign: num < 0 ? -1 : 1
             };
         }
 
-        // --- QUEUE GENERATION (Group by Place Value) ---
         function generateQueue(sVal, aVal) {
-            const s = decompose(sVal);
-            const a = decompose(aVal);
+            const m = currentMode.multiplier;
+            const s = decompose(sVal, m);
+            const a = decompose(aVal, m);
             const q = [];
 
-            // Helper to push a group of steps
-            function addGroup(count, val, type, color, id, name, isStartNum) {
+            // Helper for steps
+            function addGroup(count, valRaw, type, color, id, name, isStartNum) {
                 if (count <= 0) return;
+                const val = valRaw * m; // Scale value (e.g. 10 becomes 100 in Advanced)
+                
                 for (let i = 1; i <= count; i++) {
                     q.push({
                         type: type,
-                        val: val,
+                        val: val, 
                         color: color,
                         id: id,
-                        // Context Data
                         groupName: name, 
                         isStartNum: isStartNum, 
                         stepNum: i,
@@ -302,48 +425,37 @@
                 }
             }
 
-            // ORDER: All Hundreds -> All Tens -> All Ones
+            // Define step values based on multiplier
+            // Standard: Fly=100, Jump=10, Walk=1
+            // Advanced: Fly=1000, Jump=100, Walk=10
+            
+            // 1. Hundreds (Purple)
+            addGroup(s.h, 100, 'FLY', currentMode.colors[2], 's-h', currentMode.labels[2], true);
+            addGroup(a.h, 100, 'FLY', currentMode.colors[2], 'a-h', currentMode.labels[2], false);
 
-            // 1. Hundreds
-            addGroup(s.h, 100, 'FLY', '#9c27b0', 's-h', 'hundreds', true);
-            addGroup(a.h, 100, 'FLY', '#9c27b0', 'a-h', 'hundreds', false);
+            // 2. Tens (Orange)
+            addGroup(s.t, 10, 'JUMP', currentMode.colors[1], 's-t', currentMode.labels[1], true);
+            addGroup(a.t, 10, 'JUMP', currentMode.colors[1], 'a-t', currentMode.labels[1], false);
 
-            // 2. Tens
-            addGroup(s.t, 10, 'JUMP', '#e65100', 's-t', 'tens', true);
-            addGroup(a.t, 10, 'JUMP', '#e65100', 'a-t', 'tens', false);
-
-            // 3. Ones
-            addGroup(s.o, 1, 'WALK', '#00bcd4', 's-o', 'ones', true);
-            addGroup(a.o, 1, 'WALK', '#00bcd4', 'a-o', 'ones', false);
+            // 3. Ones (Blue)
+            addGroup(s.o, 1, 'WALK', currentMode.colors[0], 's-o', currentMode.labels[0], true);
+            addGroup(a.o, 1, 'WALK', currentMode.colors[0], 'a-o', currentMode.labels[0], false);
 
             return q;
         }
 
-        // --- Narrative Engine (Fixed Math) ---
         function getSmartDialogue(step) {
             const isFirstStep = step.stepNum === 1;
-            
-            // Calculate strictly how many are left AFTER this step finishes.
-            // But for the dialogue "X to go", we usually mean "including this one or remaining ones".
-            // Let's make it simple: "We have X steps left in this part."
             const stepsLeftToClick = step.totalInGroup - (step.stepNum - 1);
             const stepsDone = step.stepNum - 1;
 
             if (isFirstStep) {
-                // STARTING A NEW GROUP
                 if (step.isStartNum) {
-                    if (step.groupName === 'hundreds') return `Let's start with Hundreds! ${step.totalInGroup}00 from the first number.`;
-                    if (step.groupName === 'tens') return `Let's do Tens! Starting with ${step.totalInGroup}0 from the first number.`;
-                    if (step.groupName === 'ones') return `Now let's do Ones. ${step.totalInGroup} from the first number.`;
-                }
-                else {
-                    if (step.groupName === 'hundreds') return `Done with first hundreds! Now adding ${step.totalInGroup}00 from the second number.`;
-                    if (step.groupName === 'tens') return `First tens done! Now adding ${step.totalInGroup}0 from the second number.`;
-                    if (step.groupName === 'ones') return `First ones done! Now adding ${step.totalInGroup} from the second number.`;
+                    return `Starting with ${step.groupName}! We need ${step.totalInGroup} steps of ${step.val}.`;
+                } else {
+                    return `Now adding the ${step.groupName} from the second number. Need ${step.totalInGroup} steps.`;
                 }
             } else {
-                // IN THE MIDDLE OF A GROUP
-                // Example: 40. Step 2. Done 1. Left to Click: 3.
                 if (stepsLeftToClick === 1) return `Last one for this part!`;
                 return `${stepsDone} down! ${stepsLeftToClick} to go.`;
             }
@@ -351,67 +463,68 @@
         }
 
         function handleInteraction() {
-            if (state === 'IDLE') {
-                initialize();
-            } else if (state === 'RUNNING') {
-                processNextStep();
-            } else if (state === 'DONE') {
-                reset();
-            }
+            if (state === 'IDLE') initialize();
+            else if (state === 'RUNNING') processNextStep();
+            else if (state === 'DONE') reset();
         }
 
         function initialize() {
             const sVal = parseInt(document.getElementById('startNum').value) || 0;
             const aVal = parseInt(document.getElementById('addNum').value) || 0;
-
-            if (sVal + aVal > 1000) { alert("Total cannot exceed 1000!"); return; }
-
-            const s = decompose(sVal);
-            const a = decompose(aVal);
             
-            // Render Expanded Form
+            // Validation
+            if (sVal + aVal > currentMode.max) { alert("Too high for this mode!"); return; }
+            if (sVal < currentMode.min) { alert("Too low for this mode!"); return; }
+
+            const m = currentMode.multiplier;
+            const s = decompose(sVal, m);
+            const a = decompose(aVal, m);
+            
+            // Render Expanded Form (Smart Labels based on mode)
+            const labels = currentMode.labels; // e.g. ["Tens", "Hundreds", "Thousands"] in Advanced
+            
             let html = `<div class="number-group">`;
-            if(s.h) html += `<span id="s-h" class="part highlight-hundreds">${s.h}00</span> + `;
-            if(s.t) html += `<span id="s-t" class="part highlight-tens">${s.t}0</span> + `;
-            html += `<span id="s-o" class="part highlight-ones">${s.o}</span></div>`;
+            if(s.h) html += `<span id="s-h" class="part highlight-hundreds" title="${labels[2]}">${s.h * 100 * m}</span> + `;
+            if(s.t) html += `<span id="s-t" class="part highlight-tens" title="${labels[1]}">${s.t * 10 * m}</span> + `;
+            html += `<span id="s-o" class="part highlight-ones" title="${labels[0]}">${s.o * 1 * m}</span></div>`;
             
             html += ` <span style="font-size:30px">+</span> `;
             
             html += `<div class="number-group">`;
-            if(a.h) html += `<span id="a-h" class="part highlight-hundreds">${a.h}00</span> + `;
-            if(a.t) html += `<span id="a-t" class="part highlight-tens">${a.t}0</span> + `;
-            html += `<span id="a-o" class="part highlight-ones">${a.o}</span></div>`;
+            if(a.h) html += `<span id="a-h" class="part highlight-hundreds">${a.h * 100 * m}</span> + `;
+            if(a.t) html += `<span id="a-t" class="part highlight-tens">${a.t * 10 * m}</span> + `;
+            html += `<span id="a-o" class="part highlight-ones">${a.o * 1 * m}</span></div>`;
 
             expandedZone.innerHTML = html;
 
             stepQueue = generateQueue(sVal, aVal);
             currentStepIndex = 0;
-            currentPos = 0;
+            currentPos = 0; // Frog actually starts at 0 visually, then builds up first number
             
-            // Reset Frog Position to 0
+            // Reset Frog Position to 0 (or start val? No, we build from 0)
             frogContainer.style.transition = 'none';
-            const x = 50 + (0 * PIXELS_PER_UNIT);
-            frogContainer.style.left = (x - 25) + 'px';
-            container.scrollLeft = 0;
+            frogContainer.style.left = (getX(0) - 25) + 'px';
+            container.scrollLeft = getX(0) - (container.clientWidth/2);
 
             state = 'RUNNING';
             speechBubble.style.display = 'block';
             
             if(stepQueue.length > 0) {
-                speechBubble.innerText = "Starting at 0! " + getSmartDialogue(stepQueue[0]);
-                actionBtn.innerText = "Do it!";
+                speechBubble.innerText = "Start at 0! " + getSmartDialogue(stepQueue[0]);
+                actionBtn.innerText = "Go!";
             } else {
-                speechBubble.innerText = "Zero plus zero is... zero!";
+                speechBubble.innerText = "Nothing to do!";
                 state = 'DONE';
             }
 
             document.getElementById('startNum').disabled = true;
             document.getElementById('addNum').disabled = true;
+            document.getElementById('modeSelect').disabled = true;
         }
 
         async function processNextStep() {
             if (currentStepIndex >= stepQueue.length) {
-                speechBubble.innerText = `We made it! The answer is ${currentPos}.`;
+                speechBubble.innerText = `Finished! Answer is ${currentPos}.`;
                 actionBtn.innerText = "Reset";
                 actionBtn.style.backgroundColor = "#4caf50";
                 state = 'DONE';
@@ -440,7 +553,6 @@
                 if(el) el.classList.add('crossed');
             }
 
-            // Dialogue for NEXT step
             currentStepIndex++;
             actionBtn.disabled = false;
             
@@ -448,12 +560,12 @@
                 const nextStep = stepQueue[currentStepIndex];
                 speechBubble.innerText = getSmartDialogue(nextStep);
                 
-                if(nextStep.type === 'FLY') actionBtn.innerText = "Fly +100";
-                if(nextStep.type === 'JUMP') actionBtn.innerText = "Jump +10";
-                if(nextStep.type === 'WALK') actionBtn.innerText = "Walk +1";
+                if(nextStep.type === 'FLY') actionBtn.innerText = `Fly +${nextStep.val}`;
+                if(nextStep.type === 'JUMP') actionBtn.innerText = `Jump +${nextStep.val}`;
+                if(nextStep.type === 'WALK') actionBtn.innerText = `Walk +${nextStep.val}`;
 
             } else {
-                 speechBubble.innerText = `Hurray! We reached ${currentPos}.`;
+                 speechBubble.innerText = `Hurray! Reached ${currentPos}.`;
                  actionBtn.innerText = "Finish";
             }
         }
@@ -462,22 +574,28 @@
             ctx.clearRect(0,0, canvas.width, canvas.height);
             drawLine();
             
+            // Move frog to starting position based on mode (0 usually)
+            frogContainer.style.transition = 'none';
+            const startX = getX(0);
+            frogContainer.style.left = (startX - 25) + 'px';
+            container.scrollLeft = startX - (container.clientWidth/2);
+
             document.getElementById('startNum').disabled = false;
             document.getElementById('addNum').disabled = false;
+            document.getElementById('modeSelect').disabled = false;
             
-            expandedZone.innerHTML = "<span>Enter numbers and click Start!</span>";
+            expandedZone.innerHTML = "<span>Mode: " + document.getElementById('modeSelect').value + "</span>";
             speechBubble.style.display = 'none';
             rocket.style.display = 'none';
             actionBtn.innerText = "Start";
             actionBtn.style.backgroundColor = "#00bcd4";
             
             state = 'IDLE';
-            frogContainer.style.transition = 'none';
-            frogContainer.style.left = '25px'; 
-            container.scrollLeft = 0;
         }
 
-        drawLine();
+        // Init
+        changeMode(); // Sets up initial view
+
     </script>
 </body>
 </html>
