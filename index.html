@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Frog: Ultimate Edition (Stable)</title>
+    <title>Math Frog: Universal Aggregation</title>
     <style>
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
@@ -11,6 +11,7 @@
             text-align: center;
             margin: 0;
             padding: 20px;
+            overflow-y: hidden;
         }
 
         /* --- UI: Top Bar --- */
@@ -52,7 +53,6 @@
             margin: 10px auto;
         }
 
-        /* Dynamic Input Rows */
         #inputContainer {
             display: flex;
             flex-direction: column; 
@@ -102,9 +102,12 @@
         
         .number-group { border: 1px solid #ddd; padding: 5px 10px; border-radius: 8px; background: #fff; display: inline-flex; gap: 5px;}
         .part { display: inline-block; padding: 0 2px; position: relative; transition: all 0.3s; }
-        .highlight-hundreds { color: #9c27b0; font-weight: 900; } 
-        .highlight-tens { color: #e65100; font-weight: 900; }     
-        .highlight-ones { color: #00bcd4; font-weight: 900; }     
+        
+        /* Universal Color Classes */
+        .tier-3 { color: #9c27b0; font-weight: 900; } /* Highest (Hundreds/Thousands) */
+        .tier-2 { color: #e65100; font-weight: 900; } /* Middle (Tens/Hundreds) */
+        .tier-1 { color: #00bcd4; font-weight: 900; } /* Lowest (Ones/Tens) */
+        
         .crossed { opacity: 0.4; color: #999; text-decoration: line-through; text-decoration-color: red; text-decoration-thickness: 3px; }
 
         #actionBtn {
@@ -130,7 +133,6 @@
 
         canvas { display: block; }
 
-        /* Frog & Rocket */
         .character-container {
             position: absolute;
             bottom: 70px;
@@ -142,7 +144,6 @@
             pointer-events: none;
         }
 
-        /* Mirror class for walking backwards */
         .face-left { transform: scaleX(-1); }
 
         .frog-emoji { font-size: 40px; display: inline-block; transition: transform 0.3s; }
@@ -158,7 +159,6 @@
             content: ''; position: absolute; bottom: -12px; left: 50%;
             margin-left: 20px; border-width: 12px 12px 0; border-style: solid; border-color: #333 transparent;
         }
-
     </style>
 </head>
 <body>
@@ -176,12 +176,8 @@
     </div>
 
     <div class="dashboard">
-        <div id="inputContainer">
-            </div>
-
-        <div id="expandedZone" class="expanded-box">
-            <span>Configure numbers and click Start!</span>
-        </div>
+        <div id="inputContainer"></div>
+        <div id="expandedZone" class="expanded-box"><span>Configure numbers and click Start!</span></div>
 
         <button id="actionBtn" onclick="handleInteraction()">Start</button>
         <br>
@@ -199,14 +195,16 @@
 
     <script>
         // --- CONFIGURATION ---
+        // Labels array order: [Low, Mid, High]
         const MODES = {
             STANDARD: { min: 0, max: 1000, multiplier: 1, colors: ['#00bcd4', '#e65100', '#9c27b0'], labels: ['Ones', 'Tens', 'Hundreds'] },
+            // In Advanced: Multiplier 10 means: 1 Walk = 10, 1 Jump = 100, 1 Fly = 1000
             ADVANCED: { min: 0, max: 10000, multiplier: 10, colors: ['#009688', '#ff9800', '#673ab7'], labels: ['Tens', 'Hundreds', 'Thousands'] },
             NEGATIVE: { min: -500, max: 500, multiplier: 1, colors: ['#00bcd4', '#e65100', '#9c27b0'], labels: ['Ones', 'Tens', 'Hundreds'] }
         };
         let currentMode = MODES.STANDARD;
 
-        // --- DOM ELEMENTS ---
+        // --- DOM ---
         const container = document.getElementById('scroll-container');
         const canvas = document.getElementById('numberLine');
         const ctx = canvas.getContext('2d');
@@ -225,23 +223,19 @@
         let currentPos = 0;
         let stepQueue = [];
         let currentStepIndex = 0;
-
-        // --- INPUT MANAGEMENT ---
         let inputCount = 0;
 
+        // --- INPUTS ---
         function addInputRow(val = '', op = '+') {
             const div = document.createElement('div');
             div.className = 'input-row';
             div.id = `row-${inputCount}`;
             
             let html = '';
-            
-            // First row (Start Number)
             if (inputCount === 0) {
                 html = `<span style="font-weight:bold;">Start:</span>
                         <input type="number" id="num-${inputCount}" value="${val}">`;
             } else {
-                // Subsequent rows (Operator + Number)
                 html = `<select id="op-${inputCount}" class="operator-select">
                             <option value="+" ${op==='+'?'selected':''}>+</option>
                             <option value="-" ${op==='-'?'selected':''}>-</option>
@@ -249,10 +243,8 @@
                         <input type="number" id="num-${inputCount}" value="${val}">
                         <button class="remove-btn" onclick="removeRow(${inputCount})">✕</button>`;
             }
-
             div.innerHTML = html;
             inputContainer.appendChild(div);
-            
             refreshAddButton();
             inputCount++;
         }
@@ -260,7 +252,6 @@
         function refreshAddButton() {
             const existing = document.getElementById('btnAddRow');
             if(existing) existing.remove();
-
             const btn = document.createElement('button');
             btn.id = 'btnAddRow';
             btn.className = 'add-row-btn';
@@ -279,17 +270,9 @@
             inputCount = 0;
             const key = document.getElementById('modeSelect').value;
             
-            if (key === 'STANDARD') {
-                addInputRow(32);
-                addInputRow(46, '+');
-            } else if (key === 'ADVANCED') {
-                addInputRow(320);
-                addInputRow(460, '+');
-            } else if (key === 'NEGATIVE') {
-                addInputRow(-10);
-                addInputRow(25, '+'); 
-                addInputRow(5, '-'); 
-            }
+            if (key === 'STANDARD') { addInputRow(123); addInputRow(45, '+'); }
+            else if (key === 'ADVANCED') { addInputRow(1230); addInputRow(450, '+'); }
+            else if (key === 'NEGATIVE') { addInputRow(50); addInputRow(23, '-'); }
         }
 
         function changeMode() {
@@ -300,7 +283,6 @@
         }
 
         // --- GAME LOGIC ---
-
         function getX(val) {
             let visualUnit = val;
             if (currentMode === MODES.ADVANCED) visualUnit = val / 10;
@@ -314,9 +296,7 @@
             else range = currentMode.max - currentMode.min;
             
             const totalWidth = (range * PIXELS_PER_UNIT) + 100;
-            
-            canvas.width = totalWidth; 
-            canvas.height = 450;
+            canvas.width = totalWidth; canvas.height = 450;
 
             ctx.clearRect(0,0, canvas.width, canvas.height);
             ctx.beginPath(); ctx.moveTo(0, LINE_Y); ctx.lineTo(canvas.width, LINE_Y);
@@ -363,18 +343,15 @@
             ctx.stroke();
             ctx.setLineDash([]);
             
-            // Draw Arrow head
             ctx.beginPath(); ctx.arc(endX, LINE_Y, 4, 0, Math.PI*2); ctx.fillStyle = color; ctx.fill();
         }
 
-        // -- Animation --
         const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
         async function animateFrog(newPos, type, distVal) {
             const x = getX(newPos);
             const containerCenter = container.clientWidth / 2;
             
-            // Face the direction of jump (negative distance = look left)
             if (distVal < 0) frogImg.className = "frog-emoji face-left";
             else frogImg.className = "frog-emoji";
 
@@ -406,47 +383,74 @@
             await sleep(200);
         }
 
-        // -- Decomposition & Queue --
+        // --- UNIVERSAL DECOMPOSITION (TIER BASED) ---
+        // Tier 3 = High (Fly), Tier 2 = Mid (Jump), Tier 1 = Low (Walk)
+        // Works for Standard (H/T/O) and Advanced (Th/H/T)
         function decompose(num, multiplier) {
-            const val = num / multiplier;
+            const val = num / multiplier; // Normalize (e.g. 120 / 10 = 12)
             const sign = val < 0 ? -1 : 1;
             const absVal = Math.abs(val);
-            
             return {
-                h: Math.floor(absVal / 100),
-                t: Math.floor((absVal % 100) / 10),
-                o: Math.floor(absVal % 10),
+                high: Math.floor(absVal / 100),
+                mid: Math.floor((absVal % 100) / 10),
+                low: Math.floor(absVal % 10),
                 sign: sign
             };
         }
 
+        // --- UNIVERSAL QUEUE GENERATOR (AGGREGATED) ---
+        // Loops 3 times over inputs to ensure Highest Value moves happen first for EVERY input
         function generateQueue(inputs) {
             const m = currentMode.multiplier;
             const q = [];
-            
+            const colors = currentMode.colors;
+            const labels = currentMode.labels;
+
+            // Loop 1: ALL TIER 3 (Highest)
             inputs.forEach((input, index) => {
                 const parts = decompose(input.val, m);
-                const isStart = (index === 0);
-                const sign = parts.sign; 
-                
-                function addGroup(count, unitVal, type, color, label) {
-                    if (count <= 0) return;
-                    const realVal = unitVal * m * sign; // Apply sign here!
-                    for(let i=1; i<=count; i++) {
-                        q.push({
-                            type: type, val: realVal, color: color,
-                            id: `p-${index}-${label}`, 
-                            groupName: label, isStartNum: isStart, stepNum: i, totalInGroup: count,
-                            inputIndex: index
-                        });
-                    }
+                const realVal = 100 * m * parts.sign;
+                if(parts.high > 0) {
+                     for(let i=1; i<=parts.high; i++) {
+                         q.push({
+                            type: 'FLY', val: realVal, color: colors[2],
+                            id: `p-${index}-Tier3`, groupName: labels[2],
+                            stepNum: i, totalInGroup: parts.high
+                         });
+                     }
                 }
-
-                // Order: Hundreds -> Tens -> Ones
-                addGroup(parts.h, 100, 'FLY', currentMode.colors[2], 'Hundreds');
-                addGroup(parts.t, 10, 'JUMP', currentMode.colors[1], 'Tens');
-                addGroup(parts.o, 1, 'WALK', currentMode.colors[0], 'Ones');
             });
+
+            // Loop 2: ALL TIER 2 (Middle)
+            inputs.forEach((input, index) => {
+                const parts = decompose(input.val, m);
+                const realVal = 10 * m * parts.sign;
+                if(parts.mid > 0) {
+                     for(let i=1; i<=parts.mid; i++) {
+                         q.push({
+                            type: 'JUMP', val: realVal, color: colors[1],
+                            id: `p-${index}-Tier2`, groupName: labels[1],
+                            stepNum: i, totalInGroup: parts.mid
+                         });
+                     }
+                }
+            });
+
+            // Loop 3: ALL TIER 1 (Lowest)
+            inputs.forEach((input, index) => {
+                const parts = decompose(input.val, m);
+                const realVal = 1 * m * parts.sign;
+                if(parts.low > 0) {
+                     for(let i=1; i<=parts.low; i++) {
+                         q.push({
+                            type: 'WALK', val: realVal, color: colors[0],
+                            id: `p-${index}-Tier1`, groupName: labels[0],
+                            stepNum: i, totalInGroup: parts.low
+                         });
+                     }
+                }
+            });
+            
             return q;
         }
 
@@ -455,15 +459,11 @@
             const stepsLeft = step.totalInGroup - (step.stepNum - 1);
             const dir = step.val < 0 ? "back" : "forward";
             
-            if (isFirstStep) {
-                if (step.isStartNum) return `Start! Moving ${dir} with ${step.totalInGroup} ${step.groupName}.`;
-                return `Next number! Adding ${step.totalInGroup} ${step.groupName} (${dir}).`;
-            }
+            if (isFirstStep) return `Doing ${step.groupName}! Move ${dir} ${step.totalInGroup} times.`;
             if (stepsLeft === 1) return `Last one for this part!`;
             return `${step.stepNum - 1} down, ${stepsLeft} to go.`;
         }
 
-        // -- MAIN LOOP --
         function gatherInputs() {
             const inputs = [];
             const row0 = document.getElementById(`num-0`);
@@ -475,7 +475,6 @@
                 if(rows[i].id === 'btnAddRow') continue; 
                 const id = rows[i].id.split('-')[1];
                 if(id === '0') continue; 
-
                 const op = document.getElementById(`op-${id}`).value;
                 const num = parseInt(document.getElementById(`num-${id}`).value) || 0;
                 inputs.push({ val: op === '-' ? -num : num });
@@ -491,21 +490,20 @@
 
             inputs.forEach((inp, idx) => {
                 const parts = decompose(inp.val, m);
-                const absH = parts.h * 100 * m;
-                const absT = parts.t * 10 * m;
-                const absO = parts.o * 1 * m;
+                const absH = parts.high * 100 * m;
+                const absT = parts.mid * 10 * m;
+                const absO = parts.low * 1 * m;
                 
                 html += `<div class="number-group">`;
                 if(idx > 0) html += `<span style="font-size:20px; margin-right:5px;">${inp.val < 0 ? '-' : '+'}</span>`;
                 
-                if(parts.h) html += `<span id="p-${idx}-Hundreds" class="part highlight-hundreds">${absH}</span>`;
-                if(parts.h && (parts.t || parts.o)) html += `+`;
-                if(parts.t) html += `<span id="p-${idx}-Tens" class="part highlight-tens">${absT}</span>`;
-                if(parts.t && parts.o) html += `+`;
-                if(parts.o) html += `<span id="p-${idx}-Ones" class="part highlight-ones">${absO}</span>`;
+                if(parts.high) html += `<span id="p-${idx}-Tier3" class="part tier-3">${absH}</span>`;
+                if(parts.high && (parts.mid || parts.low)) html += `+`;
+                if(parts.mid) html += `<span id="p-${idx}-Tier2" class="part tier-2">${absT}</span>`;
+                if(parts.mid && parts.low) html += `+`;
+                if(parts.low) html += `<span id="p-${idx}-Tier1" class="part tier-1">${absO}</span>`;
                 
-                if(!parts.h && !parts.t && !parts.o) html += `<span>0</span>`;
-                
+                if(!parts.high && !parts.mid && !parts.low) html += `<span>0</span>`;
                 html += `</div>`;
                 total += inp.val;
             });
@@ -579,11 +577,8 @@
             if(currentStepIndex < stepQueue.length) {
                 const nextStep = stepQueue[currentStepIndex];
                 speechBubble.innerText = getSmartDialogue(nextStep);
-                
                 const verb = nextStep.val < 0 ? "Back" : "Add";
-                if(nextStep.type === 'FLY') actionBtn.innerText = `Fly ${verb} ${Math.abs(nextStep.val)}`;
-                if(nextStep.type === 'JUMP') actionBtn.innerText = `Jump ${verb} ${Math.abs(nextStep.val)}`;
-                if(nextStep.type === 'WALK') actionBtn.innerText = `Walk ${verb} ${Math.abs(nextStep.val)}`;
+                actionBtn.innerText = `${verb} ${Math.abs(nextStep.val)}`;
             } else {
                  speechBubble.innerText = `Hurray! Reached ${currentPos}.`;
                  actionBtn.innerText = "Finish";
