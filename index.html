@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Math Frog: Universal Aggregation</title>
+    <title>Math Frog: Place Value Master (Scroll Fixed)</title>
     <style>
         body {
             font-family: 'Comic Sans MS', 'Chalkboard SE', sans-serif;
@@ -11,7 +11,8 @@
             text-align: center;
             margin: 0;
             padding: 20px;
-            overflow-y: hidden;
+            /* FIX: Allow vertical scrolling so you can reach the game on small screens */
+            overflow-y: auto; 
         }
 
         /* --- UI: Top Bar --- */
@@ -28,6 +29,7 @@
             max-width: 900px;
             margin-left: auto;
             margin-right: auto;
+            flex-wrap: wrap; /* Allow wrapping on mobile */
         }
 
         select, button {
@@ -59,7 +61,7 @@
             align-items: center;
             gap: 10px;
             margin-bottom: 15px;
-            max-height: 250px;
+            max-height: 300px; /* Increased height */
             overflow-y: auto;
             padding: 5px;
         }
@@ -104,9 +106,9 @@
         .part { display: inline-block; padding: 0 2px; position: relative; transition: all 0.3s; }
         
         /* Universal Color Classes */
-        .tier-3 { color: #9c27b0; font-weight: 900; } /* Highest (Hundreds/Thousands) */
-        .tier-2 { color: #e65100; font-weight: 900; } /* Middle (Tens/Hundreds) */
-        .tier-1 { color: #00bcd4; font-weight: 900; } /* Lowest (Ones/Tens) */
+        .tier-3 { color: #9c27b0; font-weight: 900; } 
+        .tier-2 { color: #e65100; font-weight: 900; } 
+        .tier-1 { color: #00bcd4; font-weight: 900; } 
         
         .crossed { opacity: 0.4; color: #999; text-decoration: line-through; text-decoration-color: red; text-decoration-thickness: 3px; }
 
@@ -121,7 +123,7 @@
         #scroll-container {
             width: 95%;
             height: 450px;
-            overflow-x: auto;
+            overflow-x: auto; /* Allow horizontal scroll for the number line */
             margin: 20px auto;
             border: 4px solid #00838f;
             border-radius: 15px;
@@ -129,6 +131,8 @@
             position: relative;
             box-shadow: inset 0 0 20px rgba(0,0,0,0.05);
             display: block; 
+            /* Improved touch scrolling */
+            -webkit-overflow-scrolling: touch;
         }
 
         canvas { display: block; }
@@ -195,10 +199,8 @@
 
     <script>
         // --- CONFIGURATION ---
-        // Labels array order: [Low, Mid, High]
         const MODES = {
             STANDARD: { min: 0, max: 1000, multiplier: 1, colors: ['#00bcd4', '#e65100', '#9c27b0'], labels: ['Ones', 'Tens', 'Hundreds'] },
-            // In Advanced: Multiplier 10 means: 1 Walk = 10, 1 Jump = 100, 1 Fly = 1000
             ADVANCED: { min: 0, max: 10000, multiplier: 10, colors: ['#009688', '#ff9800', '#673ab7'], labels: ['Tens', 'Hundreds', 'Thousands'] },
             NEGATIVE: { min: -500, max: 500, multiplier: 1, colors: ['#00bcd4', '#e65100', '#9c27b0'], labels: ['Ones', 'Tens', 'Hundreds'] }
         };
@@ -383,9 +385,7 @@
             await sleep(200);
         }
 
-        // --- UNIVERSAL DECOMPOSITION (TIER BASED) ---
-        // Tier 3 = High (Fly), Tier 2 = Mid (Jump), Tier 1 = Low (Walk)
-        // Works for Standard (H/T/O) and Advanced (Th/H/T)
+        // --- UNIVERSAL DECOMPOSITION ---
         function decompose(num, multiplier) {
             const val = num / multiplier; // Normalize (e.g. 120 / 10 = 12)
             const sign = val < 0 ? -1 : 1;
@@ -398,15 +398,14 @@
             };
         }
 
-        // --- UNIVERSAL QUEUE GENERATOR (AGGREGATED) ---
-        // Loops 3 times over inputs to ensure Highest Value moves happen first for EVERY input
+        // --- QUEUE GENERATOR (AGGREGATED: High -> Mid -> Low) ---
         function generateQueue(inputs) {
             const m = currentMode.multiplier;
             const q = [];
             const colors = currentMode.colors;
             const labels = currentMode.labels;
 
-            // Loop 1: ALL TIER 3 (Highest)
+            // Loop 1: ALL TIER 3 (Highest Place Value)
             inputs.forEach((input, index) => {
                 const parts = decompose(input.val, m);
                 const realVal = 100 * m * parts.sign;
@@ -421,7 +420,7 @@
                 }
             });
 
-            // Loop 2: ALL TIER 2 (Middle)
+            // Loop 2: ALL TIER 2 (Middle Place Value)
             inputs.forEach((input, index) => {
                 const parts = decompose(input.val, m);
                 const realVal = 10 * m * parts.sign;
@@ -436,7 +435,7 @@
                 }
             });
 
-            // Loop 3: ALL TIER 1 (Lowest)
+            // Loop 3: ALL TIER 1 (Lowest Place Value)
             inputs.forEach((input, index) => {
                 const parts = decompose(input.val, m);
                 const realVal = 1 * m * parts.sign;
